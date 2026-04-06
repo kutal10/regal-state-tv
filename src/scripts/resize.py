@@ -14,7 +14,7 @@ MAX_WIDTH = 1920
 MAX_HEIGHT = 1920
 WEBP_QUALITY = 80
 KEEP_TRANSPARENCY = True
-STRIP_METADATA = True
+STRIP_METADATA = False
 
 def convert_to_webp_for_web(
     input_file: str,
