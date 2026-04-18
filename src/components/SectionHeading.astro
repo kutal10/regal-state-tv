@@ -1,0 +1,63 @@
+---
+interface Props {
+	kicker: string;
+	title: string;
+	description: string;
+	actionHref?: string;
+	actionLabel?: string;
+}
+
+const { kicker, title, description, actionHref, actionLabel } = Astro.props;
+---
+
+<div class="section-heading">
+	<div class="section-copy">
+		<p class="eyebrow">{kicker}</p>
+		<h2 class="section-title">{title}</h2>
+		<p class="section-description">{description}</p>
+	</div>
+
+	{
+		actionHref && actionLabel && (
+			<a class="text-link" href={actionHref}>
+				{actionLabel}
+			</a>
+		)
+	}
+</div>
+
+<style>
+	.section-heading {
+		display: flex;
+		align-items: end;
+		justify-content: space-between;
+		gap: 24px;
+		margin-bottom: 24px;
+	}
+
+	.section-copy {
+		max-width: 40rem;
+	}
+
+	.section-title {
+		margin: 0;
+		font-size: clamp(1.8rem, 3vw, 2.6rem);
+		line-height: 1.02;
+		letter-spacing: -0.05em;
+	}
+
+	.section-description {
+		margin: 12px 0 0;
+		color: var(--muted);
+		font-size: 1rem;
+		max-width: 34rem;
+	}
+
+	@media (max-width: 720px) {
+		.section-heading {
+			flex-direction: column;
+			align-items: start;
+			margin-bottom: 20px;
+		}
+	}
+</style>

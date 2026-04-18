@@ -1,0 +1,157 @@
+---
+import EditionCard from '../../../components/EditionCard.astro';
+import Header from '../../../components/Header.astro';
+import Layout from '../../../layouts/Layout.astro';
+import {
+	archiveShelves,
+	type ArchiveShelfId,
+	getEditionsForShelf,
+	featuredEdition,
+} from '../../../data/site';
+
+export function getStaticPaths() {
+	return archiveShelves.map((shelf) => ({
+		params: { shelf: shelf.id },
+		props: { shelfId: shelf.id },
+	}));
+}
+
+interface Props {
+	shelfId: ArchiveShelfId;
+}
+
+const { shelfId } = Astro.props;
+const shelf = archiveShelves.find((item) => item.id === shelfId);
+
+if (!shelf) {
+	throw new Error(`Unknown shelf: ${shelfId}`);
+}
+
+const editions = getEditionsForShelf(shelfId);
+const otherShelves = archiveShelves.filter((item) => item.id !== shelfId);
+---
+
+<Layout
+	title={`${shelf.label} Shelf | Regal State Archive`}
+	description={shelf.description}
+>
+	<Header currentPath={`/prototype/archive/${shelf.id}`} />
+
+	<main class="page-shell shelf-shell">
+		<section class="section shelf-hero">
+			<p class="eyebrow">Archive / {shelf.label}</p>
+			<h1 class="display-title">{shelf.label} only.</h1>
+			<p class="lead">{shelf.description}</p>
+			<div class="action-row">
+				<a class="button" href="/prototype/archive">Choose another shelf</a>
+				<a class="button secondary" href={`/prototype/editions/${featuredEdition.slug}`}>Open featured edition</a>
+			</div>
+		</section>
+
+		<nav class="shelf-switcher" aria-label="Archive shelves">
+			{
+				archiveShelves.map((item) => (
+					<a class={`shelf-pill ${item.id === shelf.id ? 'is-active' : ''}`} href={item.href}>
+						{item.label}
+					</a>
+				))
+			}
+		</nav>
+
+		<section class="section shelf-grid-wrap">
+			<div class="card-grid">
+				{editions.map((edition) => <EditionCard edition={edition} />)}
+			</div>
+		</section>
+
+		<section class="section alternate-shelves">
+			{
+				otherShelves.map((item) => (
+					<a class="panel alternate-shelf" href={item.href}>
+						<div class="small-meta">
+							<span>Switch shelf</span>
+							<span>{getEditionsForShelf(item.id).length} editions</span>
+						</div>
+						<h2>{item.label}</h2>
+						<p>{item.description}</p>
+					</a>
+				))
+			}
+		</section>
+	</main>
+</Layout>
+
+<style>
+	.shelf-shell,
+	.shelf-hero {
+		display: grid;
+		gap: 18px;
+	}
+
+	.shelf-switcher {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-top: 18px;
+	}
+
+	.shelf-pill {
+		padding: 11px 16px;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(255, 255, 255, 0.03);
+		color: var(--muted);
+		text-decoration: none;
+		transition:
+			background-color var(--dur-fast) ease,
+			border-color var(--dur-fast) ease,
+			color var(--dur-fast) ease;
+	}
+
+	.shelf-pill:hover,
+	.shelf-pill.is-active {
+		background: rgba(255, 255, 255, 0.05);
+		border-color: rgba(255, 255, 255, 0.12);
+		color: var(--text);
+	}
+
+	.alternate-shelves {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 18px;
+	}
+
+	.alternate-shelf {
+		display: grid;
+		gap: 14px;
+		text-decoration: none;
+		transition:
+			transform var(--dur-fast) var(--ease-snappy),
+			background-color var(--dur-fast) ease,
+			border-color var(--dur-fast) ease;
+	}
+
+	.alternate-shelf:hover {
+		transform: translateY(-3px);
+		background: rgba(255, 255, 255, 0.04);
+		border-color: rgba(255, 255, 255, 0.12);
+	}
+
+	.alternate-shelf h2 {
+		margin: 0;
+		font-size: clamp(1.55rem, 2.7vw, 2rem);
+		line-height: 1.02;
+		letter-spacing: -0.045em;
+	}
+
+	.alternate-shelf p {
+		margin: 0;
+		color: var(--muted);
+	}
+
+	@media (max-width: 720px) {
+		.alternate-shelves {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

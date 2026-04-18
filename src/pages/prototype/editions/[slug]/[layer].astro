@@ -1,0 +1,227 @@
+---
+import Header from '../../../../components/Header.astro';
+import Layout from '../../../../layouts/Layout.astro';
+import {
+	editions,
+	getEditionLayer,
+	getEditionLayers,
+	getNextEditionLayer,
+	getPreviousEditionLayer,
+	type Edition,
+	type EditionLayerId,
+} from '../../../../data/site';
+
+export function getStaticPaths() {
+	return editions.flatMap((edition) =>
+		getEditionLayers(edition).map((layer) => ({
+			params: { slug: edition.slug, layer: layer.id },
+			props: { edition, layerId: layer.id },
+		})),
+	);
+}
+
+interface Props {
+	edition: Edition;
+	layerId: EditionLayerId;
+}
+
+type LayerCard = {
+	eyebrow: string;
+	title: string;
+	copy: string;
+	meta?: string;
+};
+
+function buildLayerView(edition: Edition, layerId: EditionLayerId) {
+	switch (layerId) {
+		case 'encounter':
+			return {
+				title: 'Main film first',
+				description:
+					'This page exists only to stage the initial encounter. No supporting material competes with the film here.',
+				cards: [
+					{
+						eyebrow: 'Synopsis',
+						title: edition.title,
+						copy: edition.synopsis,
+						meta: edition.duration,
+					},
+					{
+						eyebrow: 'Editorial frame',
+						title: 'Encounter before explanation',
+						copy: edition.headline,
+					},
+					{
+						eyebrow: 'Why this works',
+						title: 'The edition earns attention first',
+						copy: 'Interpretation is held back until the main work has had room to land.',
+					},
+				],
+			};
+		case 'interpretation':
+			return {
+				title: edition.companions[0]?.label ?? 'Interpretation',
+				description:
+					edition.companions[0]?.copy ?? 'Interpretive material should sharpen attention without flooding the page.',
+				cards: edition.notes.map((note, index) => ({
+					eyebrow: `Note ${String(index + 1).padStart(2, '0')}`,
+					title: 'Interpretive signal',
+					copy: note,
+				})),
+			};
+		case 'context':
+			return {
+				title: edition.companions[1]?.label ?? 'Context',
+				description:
+					edition.companions[1]?.copy ?? 'Context should widen the field around the edition instead of repeating the encounter.',
+				cards: [
+					{
+						eyebrow: 'Path',
+						title: edition.path,
+						copy: `This edition sits inside ${edition.theme.toLowerCase()} and belongs to a larger authored route through the archive.`,
+					},
+					{
+						eyebrow: 'Quote',
+						title: edition.quote.speaker,
+						copy: edition.quote.text,
+						meta: edition.quote.role,
+					},
+					{
+						eyebrow: 'Why context exists',
+						title: 'The work belongs to something larger',
+						copy: 'Context should reveal relationship, history, and stakes without forcing every branch onto the overview page.',
+					},
+				],
+			};
+		case 'fragments':
+			return {
+				title: edition.companions[2]?.label ?? 'Fragments',
+				description:
+					edition.companions[2]?.copy ?? 'Fragments should point back to the whole rather than replacing it.',
+				cards: edition.extracts.map((extract) => ({
+					eyebrow: extract.time,
+					title: extract.title,
+					copy: extract.note,
+				})),
+			};
+		case 'archive':
+			return {
+				title: 'Archive layer',
+				description: edition.unlock,
+				cards: [
+					{
+						eyebrow: 'Hidden artifact',
+						title: 'Unlock condition',
+						copy: edition.unlock,
+					},
+					...edition.checklist.map((item) => ({
+						eyebrow: item.done ? 'Opened' : 'Pending',
+						title: item.label,
+						copy: item.done
+							? 'This part of the edition has already been visited.'
+							: 'This part still stays behind the door until you choose to open it.',
+					})),
+				],
+			};
+		default:
+			return {
+				title: 'Layer',
+				description: edition.synopsis,
+				cards: [],
+			};
+	}
+}
+
+const { edition, layerId } = Astro.props;
+const layer = getEditionLayer(edition, layerId);
+
+if (!layer) {
+	throw new Error(`Unknown layer ${layerId} for edition ${edition.slug}`);
+}
+
+const previousLayer = getPreviousEditionLayer(edition, layerId);
+const nextLayer = getNextEditionLayer(edition, layerId);
+const view = buildLayerView(edition, layerId);
+---
+
+<Layout title={`${edition.title} / ${layer.stage}`} description={view.description}>
+	<Header currentPath={`/prototype/editions/${edition.slug}`} />
+
+	<main class="page-shell layer-shell">
+		<section class="section hero-grid layer-hero">
+			<div class="layer-hero-copy">
+				<p class="eyebrow">
+					Edition {String(edition.index).padStart(2, '0')} / {layer.stage}
+				</p>
+				<h1 class="display-title">{layer.label}</h1>
+				<p class="lead">{view.description}</p>
+				<div class="action-row">
+					{nextLayer ? <a class="button" href={nextLayer.href}>Next: {nextLayer.stage}</a> : <a class="button" href={`/prototype/editions/${edition.slug}`}>Back to edition</a>}
+					{previousLayer ? <a class="button secondary" href={previousLayer.href}>Previous: {previousLayer.stage}</a> : <a class="button secondary" href={`/prototype/editions/${edition.slug}`}>Edition overview</a>}
+				</div>
+			</div>
+
+			<aside class="panel layer-hero-note">
+				<p class="eyebrow">{edition.title}</p>
+				<h2>{view.title}</h2>
+				<p>{layer.copy}</p>
+				<div class="chip-row">
+					<span class="chip">{layer.meta}</span>
+					<span class="chip">{edition.state}</span>
+					<span class="chip">{edition.theme}</span>
+				</div>
+			</aside>
+		</section>
+
+		<section class="section layer-cards">
+			{
+				view.cards.map((card) => (
+					<article class="panel layer-card">
+						<div class="small-meta">
+							<span>{card.eyebrow}</span>
+							{card.meta ? <span>{card.meta}</span> : null}
+						</div>
+						<h2>{card.title}</h2>
+						<p>{card.copy}</p>
+					</article>
+				))
+			}
+		</section>
+	</main>
+</Layout>
+
+<style>
+	.layer-shell,
+	.layer-hero-copy,
+	.layer-hero-note,
+	.layer-card {
+		display: grid;
+		gap: 18px;
+	}
+
+	.layer-hero-note h2,
+	.layer-card h2 {
+		margin: 0;
+		font-size: clamp(1.6rem, 3vw, 2.3rem);
+		line-height: 1.02;
+		letter-spacing: -0.05em;
+	}
+
+	.layer-hero-note p,
+	.layer-card p {
+		margin: 0;
+		color: var(--muted);
+	}
+
+	.layer-cards {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 18px;
+	}
+
+	@media (max-width: 980px) {
+		.layer-cards {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

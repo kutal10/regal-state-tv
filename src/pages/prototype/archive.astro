@@ -1,0 +1,260 @@
+---
+import Header from '../../components/Header.astro';
+import Layout from '../../layouts/Layout.astro';
+import ArchiveShelfIcon from '../../components/ArchiveShelfIcon.jsx';
+import { archiveShelves, getEditionsForShelf } from '../../data/site';
+
+const shelfCards = archiveShelves.map((shelf) => ({
+	...shelf,
+	count: getEditionsForShelf(shelf.id).length,
+	kicker:
+		shelf.id === 'collected'
+			? 'Finished editions'
+			: shelf.id === 'in-progress'
+				? 'Work in motion'
+				: 'Held for later',
+	cta:
+		shelf.id === 'collected'
+			? 'Browse core works'
+			: shelf.id === 'in-progress'
+				? 'Open rough cuts'
+				: 'See future ideas',
+}));
+---
+
+<Layout
+	title="Archive | Archive Lanes"
+	description="Browse the archive by lane: Core Works, Rough Cuts, and Future Ideas."
+>
+	<Header currentPath="/prototype/archive" />
+
+	<main class="page-shell archive-home-shell">
+		<section class="section archive-home-hero">
+			<p class="eyebrow archive-home-kicker">Regal State Archive</p>
+			<h1 class="display-title">Archive Lanes</h1>
+		</section>
+
+		<section class="section shelf-picker">
+			{
+				shelfCards.map((shelf) => (
+					<a class={`panel shelf-choice shelf-choice--${shelf.id}`} href={shelf.href}>
+						<div class="small-meta shelf-choice-meta">
+							<span>{shelf.kicker}</span>
+						</div>
+						<div class="shelf-choice-count">
+							<span class="shelf-choice-count-value">{shelf.count}</span>
+							<span class="shelf-choice-count-label">editions</span>
+						</div>
+						<h2 class="shelf-choice-title">
+							<ArchiveShelfIcon shelfId={shelf.id} className="shelf-choice-title-icon" />
+							<span>{shelf.label}</span>
+						</h2>
+						<p>{shelf.description}</p>
+						<div class="shelf-choice-footer">
+							<span class="shelf-choice-rule" aria-hidden="true"></span>
+							<span class="text-link shelf-choice-link">{shelf.cta}</span>
+						</div>
+					</a>
+				))
+			}
+		</section>
+	</main>
+</Layout>
+
+<style>
+	.archive-home-shell,
+	.archive-home-hero {
+		display: grid;
+		gap: 18px;
+	}
+
+	.archive-home-hero {
+		padding-bottom: 14px;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	.archive-home-kicker {
+		margin: 0;
+		letter-spacing: 0.18em;
+	}
+
+	.archive-home-hero .display-title {
+		max-width: none;
+		font-size: clamp(3.4rem, 8vw, 5.8rem);
+		line-height: 0.94;
+		letter-spacing: -0.045em;
+	}
+
+	.shelf-picker {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 20px;
+	}
+
+	.shelf-choice {
+		position: relative;
+		display: grid;
+		gap: 18px;
+		text-decoration: none;
+		padding: 26px;
+		min-height: 330px;
+		background: var(--shelf-surface);
+		overflow: hidden;
+		transition:
+			transform var(--dur-fast) var(--ease-snappy),
+			border-color var(--dur-fast) ease,
+			box-shadow var(--dur-fast) ease;
+	}
+
+	.shelf-choice:hover {
+		transform: translateY(-4px);
+		border-color: rgba(255, 255, 255, 0.14);
+		box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+	}
+
+	.shelf-choice::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: var(--shelf-overlay);
+		opacity: 0.72;
+		pointer-events: none;
+	}
+
+	.shelf-choice--collected {
+		--shelf-surface:
+			linear-gradient(180deg, rgba(42, 31, 18, 0.92), rgba(20, 15, 11, 0.98));
+		--shelf-overlay:
+			radial-gradient(circle at 82% 18%, rgba(216, 191, 138, 0.16), transparent 30%),
+			linear-gradient(180deg, rgba(255, 248, 236, 0.04), transparent 48%);
+		box-shadow:
+			inset 0 0 0 1px rgba(216, 191, 138, 0.12),
+			0 16px 34px rgba(0, 0, 0, 0.22);
+		border-radius: 28px;
+	}
+
+	.shelf-choice--in-progress {
+		--shelf-surface:
+			linear-gradient(180deg, rgba(16, 29, 39, 0.94), rgba(11, 17, 24, 0.98));
+		--shelf-overlay:
+			radial-gradient(circle at 18% 82%, rgba(157, 196, 214, 0.14), transparent 30%),
+			linear-gradient(160deg, rgba(240, 248, 255, 0.06), transparent 44%),
+			repeating-linear-gradient(
+				135deg,
+				rgba(157, 196, 214, 0.035) 0,
+				rgba(157, 196, 214, 0.035) 12px,
+				transparent 12px,
+				transparent 28px
+			);
+		box-shadow:
+			inset 0 0 0 1px rgba(157, 196, 214, 0.12),
+			0 16px 34px rgba(0, 0, 0, 0.22);
+		border-radius: 28px;
+	}
+
+	.shelf-choice--unopened {
+		--shelf-surface:
+			linear-gradient(180deg, rgba(28, 20, 38, 0.94), rgba(16, 12, 24, 0.98));
+		--shelf-overlay:
+			radial-gradient(circle at 78% 24%, rgba(200, 182, 216, 0.16), transparent 28%),
+			linear-gradient(145deg, rgba(247, 242, 255, 0.04), transparent 48%);
+		box-shadow:
+			inset 0 0 0 1px rgba(200, 182, 216, 0.12),
+			0 16px 34px rgba(0, 0, 0, 0.22);
+		border-radius: 28px;
+	}
+
+	.shelf-choice-meta {
+		align-items: center;
+		position: relative;
+		z-index: 1;
+	}
+
+	.shelf-choice-meta span {
+		padding: 7px 10px;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, 0.09);
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	.shelf-choice-count {
+		display: grid;
+		gap: 6px;
+		padding-top: 4px;
+		position: relative;
+		z-index: 1;
+	}
+
+	.shelf-choice-count-value {
+		font-size: clamp(3.2rem, 5vw, 4.6rem);
+		line-height: 0.82;
+		letter-spacing: -0.08em;
+		font-weight: 700;
+		text-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+	}
+
+	.shelf-choice-count-label {
+		font-size: 0.72rem;
+		letter-spacing: 0.22em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.shelf-choice h2 {
+		margin: 0;
+		position: relative;
+		z-index: 1;
+		font-size: clamp(2rem, 3vw, 2.75rem);
+		line-height: 0.95;
+		letter-spacing: -0.05em;
+	}
+
+	.shelf-choice-title {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		max-width: 8.5ch;
+	}
+
+	.shelf-choice-title-icon {
+		width: 0.9em;
+		height: 0.9em;
+		flex: 0 0 auto;
+		margin-top: 0.08em;
+		opacity: 0.9;
+	}
+
+	.shelf-choice p {
+		margin: 0;
+		position: relative;
+		z-index: 1;
+		color: var(--muted);
+		max-width: 26ch;
+	}
+
+	.shelf-choice-footer {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		gap: 12px;
+		margin-top: auto;
+		padding-top: 16px;
+	}
+
+	.shelf-choice-rule {
+		display: block;
+		width: min(110px, 100%);
+		height: 1px;
+		background: linear-gradient(90deg, rgba(255, 255, 255, 0.26), transparent);
+	}
+
+	.shelf-choice-link {
+		font-size: 0.92rem;
+	}
+
+	@media (max-width: 980px) {
+		.shelf-picker {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

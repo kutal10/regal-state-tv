@@ -1,0 +1,117 @@
+---
+import type { Edition } from '../data/site';
+import PosterPanel from './PosterPanel.astro';
+
+interface Props {
+	edition: Edition;
+	href?: string;
+	compact?: boolean;
+}
+
+const { edition, href = `/prototype/editions/${edition.slug}`, compact = false } = Astro.props;
+const stateClass = edition.state.toLowerCase().replace(/\s+/g, '-');
+---
+
+<a class={`edition-card ${compact ? 'compact' : ''}`} href={href}>
+	<PosterPanel edition={edition} size={compact ? 'mini' : 'card'} />
+
+	<div class="edition-copy">
+		<div class="small-meta">
+			<span>{edition.theme}</span>
+			<span>{edition.duration}</span>
+		</div>
+		<h3>{edition.title}</h3>
+		<p>{edition.strapline}</p>
+	</div>
+
+	<div class="card-footer">
+		<span class={`status-pill ${stateClass}`}>{edition.state}</span>
+		<div class="card-progress">
+			<span>{edition.completion}% complete</span>
+			<div class="progress-bar">
+				<div class="progress-fill" style={`width: ${edition.completion}%`}></div>
+			</div>
+		</div>
+	</div>
+</a>
+
+<style>
+	.edition-card {
+		display: grid;
+		gap: 16px;
+		padding: 18px;
+		border-radius: var(--radius);
+		background: rgba(255, 255, 255, 0.025);
+		border: 1px solid rgba(255, 255, 255, 0.07);
+		color: inherit;
+		text-decoration: none;
+		transition:
+			transform var(--dur-mid) var(--ease-soft),
+			background-color var(--dur-fast) ease,
+			border-color var(--dur-fast) ease;
+	}
+
+	.edition-card:hover {
+		transform: translateY(-4px);
+		background: rgba(255, 255, 255, 0.04);
+		border-color: rgba(255, 255, 255, 0.12);
+	}
+
+	.edition-copy h3 {
+		margin: 8px 0 0;
+		font-size: 1.45rem;
+		letter-spacing: -0.045em;
+	}
+
+	.edition-copy p {
+		margin: 10px 0 0;
+		color: var(--muted);
+	}
+
+	.card-footer {
+		display: grid;
+		gap: 14px;
+	}
+
+	.status-pill {
+		display: inline-flex;
+		width: fit-content;
+		padding: 7px 10px;
+		border-radius: 999px;
+		font-family: 'IBM Plex Mono', 'Cascadia Code', monospace;
+		font-size: 0.72rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		color: var(--muted);
+	}
+
+	.status-pill.collected {
+		background: rgba(198, 181, 152, 0.12);
+	}
+
+	.status-pill.in-progress {
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	.status-pill.unopened {
+		background: rgba(255, 255, 255, 0.03);
+		color: var(--soft);
+	}
+
+	.card-progress {
+		display: grid;
+		gap: 8px;
+		color: var(--soft);
+		font-size: 0.86rem;
+	}
+
+	.compact {
+		padding: 14px;
+		border-radius: 24px;
+	}
+
+	.compact .edition-copy h3 {
+		font-size: 1.3rem;
+	}
+</style>

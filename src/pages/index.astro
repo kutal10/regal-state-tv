@@ -36,7 +36,21 @@
 
 				<p class="meta">147 videos <span aria-hidden="true">&bull;</span> 1230 minutes</p>
 
+				<div class="cta-row">
 				<div class="cta" aria-label="Coming soon">Coming soon</div>
+				<button class="cta" id="locked-preview-btn" aria-label="Locked Preview">Locked Preview</button>
+			</div>
+
+			<div class="modal-overlay" id="password-modal">
+				<div class="modal">
+					<button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+					<h2>Enter Password</h2>
+					<p>Enter the preview password to access locked content.</p>
+					<input type="password" id="password-input" placeholder="Password" autocomplete="off" />
+					<p class="modal-error" id="modal-error"></p>
+					<button class="cta" id="password-submit">Submit</button>
+				</div>
+			</div>
 
 				<a class="email" href="mailto:hello@regalstate.tv" aria-label="Email hello at regalstate dot tv">
 					<span class="email-shell">
@@ -62,6 +76,53 @@
 				</div>
 			</section>
 		</main>
+
+		<script>
+			const modal = document.getElementById('password-modal');
+			const closeBtn = document.getElementById('modal-close');
+			const submitBtn = document.getElementById('password-submit');
+			const input = document.getElementById('password-input');
+			const errorMsg = document.getElementById('modal-error');
+
+			document.getElementById('locked-preview-btn').addEventListener('click', () => {
+				modal.classList.add('active');
+				input.focus();
+			});
+
+			closeBtn.addEventListener('click', () => {
+				modal.classList.remove('active');
+				errorMsg.textContent = '';
+				input.value = '';
+			});
+
+			modal.addEventListener('click', (e) => {
+				if (e.target === modal) {
+					modal.classList.remove('active');
+					errorMsg.textContent = '';
+					input.value = '';
+				}
+			});
+
+			input.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter') {
+					submitBtn.click();
+				}
+			});
+
+			submitBtn.addEventListener('click', () => {
+				const password = input.value.trim();
+				if (password === 'preview123') {
+					modal.classList.remove('active');
+					errorMsg.textContent = '';
+					input.value = '';
+					window.location.href = '/prototype';
+				} else {
+					errorMsg.textContent = 'Incorrect password. Try again.';
+					input.value = '';
+					input.focus();
+				}
+			});
+		</script>
 	</body>
 </html>
 
@@ -269,6 +330,94 @@
 		text-transform: uppercase;
 		backdrop-filter: blur(8px);
 		-webkit-backdrop-filter: blur(8px);
+	}
+
+	.cta-row {
+		display: flex;
+		gap: 0.75rem;
+		margin-top: 0.2rem;
+	}
+
+	.cta-row .cta {
+		cursor: pointer;
+	}
+
+	.modal-overlay {
+		display: none;
+		position: fixed;
+		inset: 0;
+		background: rgba(20, 20, 20, 0.6);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		z-index: 100;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.modal-overlay.active {
+		display: flex;
+	}
+
+	.modal {
+		background: var(--bg);
+		padding: 2.5rem 2rem;
+		border: 1px solid var(--line);
+		max-width: 360px;
+		width: 90%;
+		text-align: center;
+		position: relative;
+	}
+
+	.modal-close {
+		position: absolute;
+		top: 0.75rem;
+		right: 1rem;
+		background: none;
+		border: none;
+		font-size: 1.8rem;
+		cursor: pointer;
+		color: var(--soft-ink);
+		line-height: 1;
+	}
+
+	.modal h2 {
+		margin: 0 0 0.5rem;
+		font-size: 1.4rem;
+		font-weight: 500;
+	}
+
+	.modal p {
+		margin: 0 0 1.2rem;
+		color: var(--soft-ink);
+		font-size: 0.95rem;
+	}
+
+	.modal input {
+		width: 100%;
+		padding: 0.85rem 1rem;
+		border: 1px solid rgba(20, 20, 20, 0.24);
+		background: rgba(255, 255, 255, 0.5);
+		font-family: inherit;
+		font-size: 1rem;
+		text-align: center;
+		margin-bottom: 0.75rem;
+	}
+
+	.modal input:focus {
+		outline: none;
+		border-color: var(--ink);
+	}
+
+	.modal-error {
+		color: #c00;
+		font-size: 0.85rem;
+		margin-bottom: 0.75rem;
+		min-height: 1.2em;
+	}
+
+	.modal .cta {
+		width: 100%;
+		cursor: pointer;
 	}
 
 	.email {

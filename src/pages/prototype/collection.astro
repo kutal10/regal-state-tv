@@ -1,0 +1,85 @@
+---
+import EditionCard from '../../components/EditionCard.astro';
+import Header from '../../components/Header.astro';
+import Layout from '../../layouts/Layout.astro';
+import { editions, featuredEdition, viewerProfile } from '../../data/site';
+
+const inProgress = editions.filter((edition) => viewerProfile.inProgressSlugs.includes(edition.slug));
+const collected = editions.filter((edition) => viewerProfile.collectedSlugs.includes(edition.slug));
+const continueCards = inProgress.length ? inProgress : collected.slice(0, 2);
+---
+
+<Layout
+	title="Continue | Regal State Editions"
+	description="Pick up an open edition without wading through the whole archive again."
+>
+	<Header currentPath="/prototype/collection" />
+
+	<main class="page-shell continue-shell">
+		<section class="section continue-hero">
+			<p class="eyebrow">Continue</p>
+			<h1 class="display-title">Pick up one open route.</h1>
+			<p class="lead">
+				This page only exists to help you re-enter the archive cleanly. Open work stays visible. The
+				rest stays out of the way.
+			</p>
+			<div class="action-row">
+				<a class="button" href={`/prototype/editions/${continueCards[0]?.slug ?? featuredEdition.slug}`}>
+					Resume current edition
+				</a>
+				<a class="button secondary" href="/prototype/archive/in-progress">Open active shelf</a>
+			</div>
+		</section>
+
+		<section class="section continue-grid">
+			<div class="card-grid continue-cards">
+				{continueCards.map((edition) => <EditionCard edition={edition} />)}
+			</div>
+
+			<aside class="panel continue-note">
+				<p class="eyebrow">Current signal</p>
+				<h2>{viewerProfile.currentFocus}</h2>
+				<div class="progress-bar">
+					<div class="progress-fill" style={`width: ${viewerProfile.completion}%`}></div>
+				</div>
+				<p class="small-meta">{viewerProfile.completion}% archive completion</p>
+				<ul class="info-list">
+					{viewerProfile.savedNotes.map((note) => <li>{note}</li>)}
+				</ul>
+			</aside>
+		</section>
+	</main>
+</Layout>
+
+<style>
+	.continue-shell,
+	.continue-hero,
+	.continue-note {
+		display: grid;
+		gap: 18px;
+	}
+
+	.continue-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+		gap: 20px;
+		align-items: start;
+	}
+
+	.continue-cards {
+		margin: 0;
+	}
+
+	.continue-note h2 {
+		margin: 0;
+		font-size: clamp(1.7rem, 3vw, 2.4rem);
+		line-height: 1.02;
+		letter-spacing: -0.05em;
+	}
+
+	@media (max-width: 980px) {
+		.continue-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

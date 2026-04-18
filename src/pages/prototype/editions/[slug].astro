@@ -1,0 +1,169 @@
+---
+import Header from '../../../components/Header.astro';
+import PosterPanel from '../../../components/PosterPanel.astro';
+import Layout from '../../../layouts/Layout.astro';
+import {
+	editions,
+	getEditionLayers,
+	type Edition,
+} from '../../../data/site';
+
+export function getStaticPaths() {
+	return editions.map((edition) => ({
+		params: { slug: edition.slug },
+		props: { edition },
+	}));
+}
+
+interface Props {
+	edition: Edition;
+}
+
+const { edition } = Astro.props;
+const layers = getEditionLayers(edition);
+const nextChecklistIndex = edition.checklist.findIndex((item) => !item.done);
+const nextLayer = layers[nextChecklistIndex >= 0 ? nextChecklistIndex : layers.length - 1];
+---
+
+<Layout title={`${edition.title} | Regal State Editions`} description={edition.synopsis}>
+	<Header currentPath={`/prototype/editions/${edition.slug}`} />
+
+	<main class="page-shell edition-shell">
+		<section class="section hero-grid edition-hero">
+			<div class="edition-copy">
+				<p class="eyebrow">
+					Edition {String(edition.index).padStart(2, '0')} / {edition.theme}
+				</p>
+				<h1 class="display-title">{edition.title}</h1>
+				<p class="lead">{edition.synopsis}</p>
+				<div class="action-row">
+					<a class="button" href={nextLayer.href}>{nextLayer.stage}</a>
+					<a class="button secondary" href={layers[0].href}>Start with the film</a>
+				</div>
+				<div class="chip-row">
+					<span class="chip">{edition.duration}</span>
+					<span class="chip">{edition.state}</span>
+					<span class="chip">{edition.completion}% open</span>
+				</div>
+			</div>
+
+			<article class="panel edition-hero-object">
+				<PosterPanel edition={edition} size="hero" />
+				<div class="edition-hero-note">
+					<p class="eyebrow">Editorial frame</p>
+					<h2>{edition.strapline}</h2>
+					<p>{edition.headline}</p>
+					<blockquote>{edition.quote.text}</blockquote>
+					<p class="small-meta">
+						<span>{edition.quote.speaker}</span>
+						<span>{edition.quote.role}</span>
+					</p>
+				</div>
+			</article>
+		</section>
+
+		<section class="section edition-router">
+			<div class="edition-router-copy">
+				<p class="eyebrow">Choose one layer</p>
+				<h2>Each page now does one job.</h2>
+				<p class="muted">
+					Begin with the encounter, then move outward only when you want interpretation, context,
+					fragments, or the archive layer.
+				</p>
+			</div>
+
+			<div class="layer-stack">
+				{
+					layers.map((layer) => (
+						<a class="panel layer-link" href={layer.href}>
+							<div class="layer-index">{String(layer.step).padStart(2, '0')}</div>
+							<div class="layer-link-copy">
+								<div class="small-meta">
+									<span>{layer.stage}</span>
+									<span>{layer.meta}</span>
+								</div>
+								<h3>{layer.label}</h3>
+								<p>{layer.copy}</p>
+							</div>
+						</a>
+					))
+				}
+			</div>
+		</section>
+	</main>
+</Layout>
+
+<style>
+	.edition-shell,
+	.edition-copy,
+	.edition-hero-object,
+	.edition-hero-note,
+	.edition-router,
+	.edition-router-copy {
+		display: grid;
+		gap: 18px;
+	}
+
+	.edition-hero-note h2,
+	.edition-router-copy h2,
+	.layer-link-copy h3 {
+		margin: 0;
+		font-size: clamp(1.75rem, 3vw, 2.45rem);
+		line-height: 1.02;
+		letter-spacing: -0.05em;
+	}
+
+	.edition-hero-note p,
+	.layer-link-copy p {
+		margin: 0;
+		color: var(--muted);
+	}
+
+	.edition-hero-note blockquote {
+		margin: 0;
+		font-size: 1.22rem;
+		line-height: 1.25;
+		letter-spacing: -0.03em;
+	}
+
+	.layer-stack {
+		display: grid;
+		gap: 14px;
+		margin-top: 8px;
+	}
+
+	.layer-link {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 16px;
+		align-items: start;
+		text-decoration: none;
+		transition:
+			transform var(--dur-fast) var(--ease-snappy),
+			background-color var(--dur-fast) ease,
+			border-color var(--dur-fast) ease;
+	}
+
+	.layer-link:hover {
+		transform: translateY(-3px);
+		background: rgba(255, 255, 255, 0.04);
+		border-color: rgba(255, 255, 255, 0.12);
+	}
+
+	.layer-index {
+		width: 46px;
+		height: 46px;
+		display: grid;
+		place-items: center;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		font-family: 'IBM Plex Mono', 'Cascadia Code', monospace;
+		font-size: 0.72rem;
+		color: var(--soft);
+	}
+
+	.layer-link-copy p {
+		margin-top: 10px;
+	}
+</style>

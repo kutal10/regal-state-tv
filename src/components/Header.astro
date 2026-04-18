@@ -1,0 +1,139 @@
+---
+interface Props {
+	currentPath?: string;
+}
+
+const { currentPath = '/prototype' } = Astro.props;
+
+const links = [
+	{ href: '/prototype', label: 'Home' },
+	{ href: '/prototype/archive', label: 'Archive' },
+];
+
+const isActive = (href: string) => {
+	if (href === '/prototype') {
+		return currentPath === '/prototype';
+	}
+
+	return currentPath.startsWith(href);
+};
+---
+
+<header class="site-header">
+	<div class="site-header-inner">
+		<a class="brand" href="/prototype" aria-label="Home" transition:name="site-brand">
+			<span class="brand-mark">
+				<img src="/LOGO_1.svg" alt="" />
+			</span>
+		</a>
+
+		<nav class="nav-links" aria-label="Primary">
+			{
+				links.map((link) => (
+					<a class={`nav-link ${isActive(link.href) ? 'is-active' : ''}`} href={link.href}>
+						{link.label}
+					</a>
+				))
+			}
+		</nav>
+	</div>
+</header>
+
+<style is:global>
+	.site-header {
+		position: sticky;
+		top: 0;
+		z-index: 20;
+		padding-top: 10px;
+	}
+
+	.site-header-inner {
+		width: min(760px, calc(100% - 36px));
+		margin: 0 auto;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 10px 0;
+	}
+
+	.brand {
+		display: inline-flex;
+		align-items: center;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.brand-mark {
+		width: 68px;
+		height: 68px;
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+		filter: drop-shadow(0 6px 16px rgba(36, 24, 16, 0.18));
+	}
+
+	.brand-mark img {
+		width: 56px;
+		height: auto;
+	}
+
+	.nav-links {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.nav-link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 32px;
+		padding: 10px 16px;
+		border-radius: 999px;
+		border: 1px solid rgba(38, 26, 19, 0.16);
+		background: rgba(255, 255, 255, 0.56);
+		text-decoration: none;
+		font-family: 'IBM Plex Mono', 'Cascadia Code', monospace;
+		font-size: 0.76rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: rgba(32, 25, 20, 0.86);
+		box-shadow: 0 8px 20px rgba(79, 56, 31, 0.06);
+		transition:
+			transform var(--dur-fast) var(--ease-snappy),
+			background-color var(--dur-fast) ease,
+			border-color var(--dur-fast) ease,
+			color var(--dur-fast) ease;
+	}
+
+	.nav-link:hover,
+	.nav-link.is-active {
+		transform: translateY(-2px);
+		border-color: rgba(38, 26, 19, 0.24);
+		background: rgba(255, 255, 255, 0.78);
+		color: rgba(32, 25, 20, 0.96);
+	}
+
+	@media (max-width: 900px) {
+		.site-header-inner {
+			width: min(100% - 26px, 760px);
+		}
+	}
+
+	@media (max-width: 720px) {
+		.site-header {
+			padding-top: 8px;
+		}
+
+		.site-header-inner {
+			padding: 8px 0;
+			gap: 12px;
+		}
+
+		.nav-link {
+			text-align: center;
+			padding-inline: 14px;
+		}
+	}
+</style>
