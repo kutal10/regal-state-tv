@@ -1,4 +1,5 @@
 export type ArtifactKind = 'video' | 'note' | 'conversation';
+export type ArtifactState = 'released' | 'rough' | 'idea';
 
 export type Reference = {
 	label: string;
@@ -9,6 +10,8 @@ export type Artifact = {
 	slug: string;
 	title: string;
 	kind: ArtifactKind;
+	state: ArtifactState;
+	texture: number;
 	youtubeId?: string;
 	duration: string;
 	date: string;
@@ -19,6 +22,27 @@ export type Artifact = {
 	contradicts?: { slug: string; label: string };
 	openQuestions: string[];
 };
+
+export type Idea = {
+	slug: string;
+	title: string;
+	state: Extract<ArtifactState, 'idea'>;
+	texture: number;
+	line: string;
+	questions: string[];
+};
+
+export type ArchiveTier = {
+	id: ArtifactState;
+	label: string;
+	line: string;
+};
+
+export const archiveTiers: ArchiveTier[] = [
+	{ id: 'released', label: 'Released', line: 'Finished work, ready to return to.' },
+	{ id: 'rough', label: 'Rough Cuts', line: 'In motion — open threads, partial notes.' },
+	{ id: 'idea', label: 'Future Ideas', line: 'Seeds held for the right moment. Not artifacts yet.' },
+];
 
 export type Inquiry = {
 	slug: string;
@@ -74,6 +98,8 @@ export const artifacts: Artifact[] = [
 		slug: 'the-serial-impulse',
 		title: 'The Serial Impulse',
 		kind: 'video',
+		state: 'rough',
+		texture: 4,
 		youtubeId: 'n0pzk9zhls0',
 		duration: '24 min',
 		date: '2026-08-14',
@@ -96,6 +122,8 @@ export const artifacts: Artifact[] = [
 		slug: 'notes-on-motifs',
 		title: 'Notes on Motifs',
 		kind: 'note',
+		state: 'rough',
+		texture: 11,
 		duration: '7 min read',
 		date: '2026-08-02',
 		summary:
@@ -116,6 +144,8 @@ export const artifacts: Artifact[] = [
 		slug: 'grain-and-control',
 		title: 'Grain and Control',
 		kind: 'video',
+		state: 'released',
+		texture: 17,
 		youtubeId: 'n0pzk9zhls0',
 		duration: '31 min',
 		date: '2026-07-11',
@@ -139,6 +169,8 @@ export const artifacts: Artifact[] = [
 		slug: 'against-polish',
 		title: 'Against Polish',
 		kind: 'video',
+		state: 'released',
+		texture: 23,
 		youtubeId: 'n0pzk9zhls0',
 		duration: '18 min',
 		date: '2026-06-20',
@@ -161,6 +193,8 @@ export const artifacts: Artifact[] = [
 		slug: 'on-standing-still',
 		title: 'On Standing Still',
 		kind: 'conversation',
+		state: 'released',
+		texture: 29,
 		youtubeId: 'n0pzk9zhls0',
 		duration: '42 min',
 		date: '2026-05-30',
@@ -180,8 +214,39 @@ export const artifacts: Artifact[] = [
 	},
 ];
 
+export const ideas: Idea[] = [
+	{
+		slug: 'rooms-that-remember',
+		title: 'Rooms That Remember',
+		state: 'idea',
+		texture: 7,
+		line: 'On buildings, sound, and what a space keeps after the event — an essay on acoustics as memory.',
+		questions: ['repetition', 'ugliness'],
+	},
+	{
+		slug: 'the-unread-margin',
+		title: 'The Unread Margin',
+		state: 'idea',
+		texture: 13,
+		line: 'On annotation, marginalia, and the notes nobody was meant to see — where thinking actually lives.',
+		questions: ['visible-technique'],
+	},
+	{
+		slug: 'slow-tv-fast-world',
+		title: 'Slow TV in a Fast World',
+		state: 'idea',
+		texture: 21,
+		line: 'On long duration as a form of attention — and why slowness now reads as a statement.',
+		questions: ['repetition'],
+	},
+];
+
 export function getArtifactBySlug(slug: string): Artifact | undefined {
 	return artifacts.find((artifact) => artifact.slug === slug);
+}
+
+export function getIdeaBySlug(slug: string): Idea | undefined {
+	return ideas.find((idea) => idea.slug === slug);
 }
 
 export function getInquiryArtifacts(inquiry: Inquiry): Artifact[] {
@@ -192,4 +257,15 @@ export function getInquiryArtifacts(inquiry: Inquiry): Artifact[] {
 
 export function getChronologicalArtifacts(): Artifact[] {
 	return [...artifacts].sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export function getArtifactsForTier(tierId: ArtifactState): Artifact[] {
+	if (tierId !== 'idea') {
+		return getChronologicalArtifacts().filter((artifact) => artifact.state === tierId);
+	}
+	return [];
+}
+
+export function getIdeasForTier(tierId: ArtifactState): Idea[] {
+	return tierId === 'idea' ? ideas : [];
 }

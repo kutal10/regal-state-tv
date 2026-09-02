@@ -1,13 +1,26 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Gate from '../components/Gate.astro';
-import { site, getChronologicalArtifacts, inquiries } from '../data/site';
+import {
+	site,
+	archiveTiers,
+	getArtifactsForTier,
+	getIdeasForTier,
+	getChronologicalArtifacts,
+} from '../data/site';
 
-const entries = getChronologicalArtifacts();
+const tierData = archiveTiers.map((tier) => {
+	const tierArtifacts = getArtifactsForTier(tier.id);
+	const tierIdeas = getIdeasForTier(tier.id);
+	return {
+		...tier,
+		count: tierArtifacts.length + tierIdeas.length,
+		artifacts: tierArtifacts,
+		ideas: tierIdeas,
+	};
+});
 
-function questionFor(slug: string) {
-	return inquiries.find((inquiry) => inquiry.slug === slug)?.question;
-}
+const totalPieces = getChronologicalArtifacts().length;
 
 function formatDate(date: string) {
 	return new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', {
@@ -34,32 +47,86 @@ function formatDate(date: string) {
 			<p class="kicker">The full record</p>
 			<h1>Archive</h1>
 			<p class="archive-line">
-				Every artifact, dated. No categories — the questions are the
-				organization. {entries.length} pieces so far.
+				{totalPieces} pieces, held in three states. Choose a tier.
 			</p>
 		</section>
 
-		<ul class="archive-list">
+		<section class="tier-menu" aria-label="Archive tiers">
 			{
-				entries.map((entry) => (
-					<li>
-						<a class="row" href={`/watch/${entry.slug}`}>
-							<span class="row-date">{formatDate(entry.date)}</span>
-							<span class="row-main">
-								<span class="row-title">{entry.title}</span>
-								<span class="row-summary">{entry.summary}</span>
-								<span class="row-questions">
-									{entry.questions.map((q) => questionFor(q)).filter(Boolean).join(' · ')}
-								</span>
-							</span>
-							<span class="row-kind">
-								{entry.kind} · {entry.duration}
-							</span>
-						</a>
-					</li>
+				tierData.map((tier, index) => (
+					<button
+						class={`tier ${index > 0 ? 'tier-bordered' : ''}`}
+						type="button"
+						data-tier={tier.id}
+						aria-expanded="false"
+						aria-controls={`tier-grid-${tier.id}`}
+					>
+						<span class="tier-copy">
+							<span class="tier-label">{tier.label}</span>
+							<span class="tier-line">{tier.line}</span>
+						</span>
+						<span class="tier-count">
+							<span class="tier-count-value">{tier.count}</span>
+							<span class="tier-count-label">pieces</span>
+						</span>
+					</button>
 				))
 			}
-		</ul>
+		</section>
+
+		{
+			tierData.map((tier) => (
+				<section
+					class="tier-grid-wrap"
+					id={`tier-grid-${tier.id}`}
+					data-tier-grid={tier.id}
+					hidden
+				>
+					{tier.artifacts.length > 0 && (
+						<ul class="tier-grid">
+							{tier.artifacts.map((artifact) => (
+								<li>
+									<a
+										class="card"
+										href={`/watch/${artifact.slug}`}
+										style={`--texture: url('/textures-lowres/${artifact.texture}.webp')`}
+									>
+										<span class="card-image" aria-hidden="true" />
+										<span class="card-body">
+											<span class="card-title">{artifact.title}</span>
+											<span class="card-summary">{artifact.summary}</span>
+											<span class="card-meta">
+												{formatDate(artifact.date)} · {artifact.kind} · {artifact.duration}
+											</span>
+										</span>
+									</a>
+								</li>
+							))}
+						</ul>
+					)}
+
+					{tier.ideas.length > 0 && (
+						<ul class="tier-grid">
+							{tier.ideas.map((idea) => (
+								<li>
+									<div
+										class="card card-idea"
+										style={`--texture: url('/textures-lowres/${idea.texture}.webp')`}
+									>
+										<span class="card-image" aria-hidden="true" />
+										<span class="card-body">
+											<span class="card-title">{idea.title}</span>
+											<span class="card-summary">{idea.line}</span>
+											<span class="card-meta">seed · not an artifact yet</span>
+										</span>
+									</div>
+								</li>
+							))}
+						</ul>
+					)}
+				</section>
+			))
+		}
 	</main>
 
 	<footer class="site-footer shell">
@@ -71,6 +138,33 @@ function formatDate(date: string) {
 		</span>
 	</footer>
 </Layout>
+
+<script>
+	document.querySelectorAll<HTMLButtonElement>('[data-tier]').forEach((button) => {
+		const tierId = button.dataset.tier;
+		const grid = document.querySelector<HTMLElement>(`[data-tier-grid="${tierId}"]`);
+		if (!grid) return;
+
+		button.addEventListener('click', () => {
+			const isOpen = !grid.hidden;
+
+			document.querySelectorAll<HTMLElement>('[data-tier-grid]').forEach((other) => {
+				other.hidden = true;
+			});
+			document.querySelectorAll<HTMLButtonElement>('[data-tier]').forEach((other) => {
+				other.classList.remove('tier-active');
+				other.setAttribute('aria-expanded', 'false');
+			});
+
+			if (isOpen) return;
+
+			grid.hidden = false;
+			button.classList.add('tier-active');
+			button.setAttribute('aria-expanded', 'true');
+			grid.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		});
+	});
+</script>
 
 <style>
 	.archive-head {
@@ -91,70 +185,179 @@ function formatDate(date: string) {
 		color: var(--muted);
 	}
 
-	.archive-list {
-		margin: 0;
-		padding: 0;
-		list-style: none;
+	.tier-menu {
+		display: grid;
 		border-top: 1px solid var(--hairline);
 	}
 
-	.row {
-		display: grid;
-		grid-template-columns: 10rem minmax(0, 1fr) auto;
-		gap: clamp(1rem, 2.5vw, 2.5rem);
-		align-items: baseline;
-		padding: 1.3rem 0;
+	.tier {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		width: 100%;
+		padding: clamp(1.4rem, 3vw, 2.2rem) 0;
+		border: 0;
 		border-bottom: 1px solid var(--hairline);
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
 		transition: color 160ms ease;
 	}
 
-	.row:hover .row-title {
-		color: var(--accent);
+	.tier-bordered {
+		border-left: 0;
 	}
 
-	.row-date,
-	.row-kind {
-		font-family: var(--mono);
-		font-size: 0.7rem;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
+	.tier-copy {
+		display: grid;
+		gap: 0.45rem;
+	}
+
+	.tier-label {
+		font-size: clamp(1.5rem, 3vw, 2.3rem);
+		font-weight: 300;
+		letter-spacing: -0.03em;
+		line-height: 1;
+	}
+
+	.tier-line {
 		color: var(--soft);
-		white-space: nowrap;
-	}
-
-	.row-title {
-		display: block;
-		font-size: 1.25rem;
-		letter-spacing: -0.01em;
-		transition: color 160ms ease;
-	}
-
-	.row-summary {
-		display: block;
-		margin-top: 0.35rem;
-		max-width: 64ch;
-		color: var(--muted);
 		font-size: 0.95rem;
 	}
 
-	.row-questions {
-		display: block;
-		margin-top: 0.5rem;
+	.tier-count {
+		display: grid;
+		justify-items: end;
+		gap: 0.2rem;
+	}
+
+	.tier-count-value {
 		font-family: var(--mono);
-		font-size: 0.68rem;
-		letter-spacing: 0.1em;
+		font-size: clamp(2.6rem, 6vw, 4.4rem);
+		font-weight: 400;
+		line-height: 0.9;
+		letter-spacing: -0.04em;
+		color: var(--muted);
+		transition: color 160ms ease;
+	}
+
+	.tier-count-label {
+		font-family: var(--mono);
+		font-size: 0.64rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--soft);
+	}
+
+	.tier:hover .tier-count-value,
+	.tier:hover .tier-label {
+		color: var(--accent);
+	}
+
+	.tier-active .tier-label {
+		font-style: italic;
+	}
+
+	.tier-active .tier-count-value {
+		color: var(--accent);
+	}
+
+	.tier-grid-wrap {
+		padding: clamp(1.8rem, 4vw, 3rem) 0 clamp(1rem, 2vw, 2rem);
+	}
+
+	.tier-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: clamp(1rem, 2vw, 1.6rem);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.card {
+		position: relative;
+		display: grid;
+		text-decoration: none;
+		height: 100%;
+		border: 1px solid var(--hairline);
+		overflow: hidden;
+		transition: border-color 160ms ease;
+	}
+
+	.card:hover {
+		border-color: var(--hairline-strong);
+	}
+
+	.card-idea {
+		cursor: default;
+	}
+
+	.card-image {
+		display: block;
+		aspect-ratio: 16 / 10;
+		background:
+			linear-gradient(180deg, rgba(12, 12, 12, 0.1), rgba(12, 12, 12, 0.42)),
+			var(--texture, #161616) center / cover no-repeat;
+		filter: grayscale(0.55) contrast(1.02);
+		transition: filter 240ms ease;
+	}
+
+	.card:hover .card-image {
+		filter: grayscale(0.15) contrast(1.04);
+	}
+
+	.card-body {
+		display: grid;
+		gap: 0.5rem;
+		padding: 1.1rem 1.2rem 1.3rem;
+	}
+
+	.card-title {
+		font-size: 1.18rem;
+		letter-spacing: -0.015em;
+		line-height: 1.1;
+		transition: color 160ms ease;
+	}
+
+	.card:hover .card-title {
+		color: var(--accent);
+	}
+
+	.card-idea .card-title {
+		font-style: italic;
+	}
+
+	.card-summary {
+		color: var(--muted);
+		font-size: 0.92rem;
+		line-height: 1.45;
+	}
+
+	.card-meta {
+		font-family: var(--mono);
+		font-size: 0.66rem;
+		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--soft);
 	}
 
 	@media (max-width: 880px) {
-		.row {
-			grid-template-columns: minmax(0, 1fr) auto;
+		.tier-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 620px) {
+		.tier-grid {
+			grid-template-columns: 1fr;
 		}
 
-		.row-date {
-			grid-column: 1 / -1;
-			margin-bottom: 0.4rem;
+		.tier {
+			align-items: baseline;
 		}
 	}
 </style>
