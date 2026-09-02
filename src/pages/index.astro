@@ -1,644 +1,346 @@
 ---
+import Layout from '../layouts/Layout.astro';
+import Gate from '../components/Gate.astro';
+import YouTubeEmbed from '../components/YouTubeEmbed.astro';
+import {
+	site,
+	inquiries,
+	artifacts,
+	getArtifactBySlug,
+	getChronologicalArtifacts,
+} from '../data/site';
+
+const latest = getChronologicalArtifacts()[0];
+const artifactCount = artifacts.length;
+const questionCount = inquiries.length;
+
+const inquiriesWithArtifacts = inquiries.map((inquiry) => ({
+	...inquiry,
+	artifacts: inquiry.artifactSlugs
+		.map(getArtifactBySlug)
+		.filter((a): a is NonNullable<typeof a> => Boolean(a)),
+}));
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/LOGO_1.svg" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Regal State</title>
-		<meta
-			name="description"
-			content="Curated independent human documentaries. Coming soon."
-		/>
-		<meta name="theme-color" content="#fbf8f3" />
-		<meta name="apple-mobile-web-app-capable" content="yes" />
-		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-	</head>
+<Layout title={`${site.name} — ${site.tagline}`}>
+	<Gate email={site.email} />
 
-	<body>
-		<main class="hero">
-			<section class="content">
-				<p class="eyebrow">Regal State presents</p>
+	<header class="site-header shell">
+		<a href="/" class="wordmark">Regal State <em>/ TV</em></a>
+		<nav class="site-nav" aria-label="Primary">
+			<a href="/" aria-current="page">Questions</a>
+			<a href="/archive">Archive</a>
+			<button class="nav-lock" type="button" id="lock-button">Lock</button>
+		</nav>
+	</header>
 
-				<h1>
-					<span class="headline-rotator" aria-label="Curated Independent Human">
-						<span class="headline-track" aria-hidden="true">
-							<span class="headline-word">Curated</span>
-							<span class="headline-word">Independent</span>
-							<span class="headline-word">Human</span>
-							<span class="headline-word">Curated</span>
-						</span>
-					</span>
-					<span class="headline-static">Documentaries</span>
-				</h1>
+	<main>
+		<section class="shell opening">
+			<p class="kicker">An index of open questions</p>
+			<h1>
+				This is not a feed. It is a set of questions we are investigating in
+				public, one artifact at a time.
+			</h1>
+			<p class="opening-line">
+				Every video below is a piece of an ongoing inquiry — with the references
+				that shaped it, the arguments it enters, and the questions it leaves
+				open. Where it goes next is unwritten.
+			</p>
+		</section>
 
-				<p class="meta">147 videos <span aria-hidden="true">&bull;</span> 1230 minutes</p>
+		{
+			latest && (
+				<section class="shell latest" aria-labelledby="latest-heading">
+					<hr class="rule" />
+					<div class="latest-grid">
+						<div class="latest-copy">
+							<p class="kicker">Latest artifact</p>
+							<h2 id="latest-heading">
+								<a href={`/watch/${latest.slug}`}>{latest.title}</a>
+							</h2>
+							<p class="latest-summary">{latest.summary}</p>
+							<p class="latest-meta">
+								{latest.date} · {latest.duration}
+							</p>
+						</div>
+						<div class="latest-embed">
+							<YouTubeEmbed id={latest.youtubeId!} title={latest.title} />
+						</div>
+					</div>
+				</section>
+			)
+		}
 
-				<div class="cta-row">
-				<div class="cta" aria-label="Coming soon">Coming soon</div>
-				<button class="cta" id="locked-preview-btn" aria-label="Locked Preview">Locked Preview</button>
-			</div>
+		<section class="shell index" aria-label="Open questions">
+			{
+				inquiriesWithArtifacts.map((inquiry, i) => (
+					<article class="inquiry">
+						<hr class="rule" />
+						<header class="inquiry-head">
+							<span class="inquiry-number">
+								{String(i + 1).padStart(2, '0')}
+							</span>
+							<div>
+								<h3 class="inquiry-question">{inquiry.question}</h3>
+								<p class="inquiry-line">{inquiry.line}</p>
+							</div>
+						</header>
 
-			<div class="modal-overlay" id="password-modal">
-				<div class="modal">
-					<button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
-					<h2>Enter Password</h2>
-					<p>Enter the preview password to access locked content.</p>
-					<input type="password" id="password-input" placeholder="Password" autocomplete="off" />
-					<p class="modal-error" id="modal-error"></p>
-					<button class="cta" id="password-submit">Submit</button>
-				</div>
-			</div>
+						<ul class="artifact-list">
+							{inquiry.artifacts.map((artifact) => (
+								<li>
+									<a class="artifact-row" href={`/watch/${artifact.slug}`}>
+										<span class="artifact-title">{artifact.title}</span>
+										<span class="artifact-meta">
+											{artifact.kind} · {artifact.duration}
+										</span>
+									</a>
+								</li>
+							))}
+						</ul>
 
-				<a class="email" href="mailto:hello@regalstate.tv" aria-label="Email hello at regalstate dot tv">
-					<span class="email-shell">
-						<span class="email-text">hello@regalstate.tv</span>
-					</span>
-				</a>
+						<div class="inquiry-threads">
+							<p class="kicker">Still open here</p>
+							<ul>
+								{inquiry.openThreads.map((thread) => (
+									<li>{thread}</li>
+								))}
+							</ul>
+						</div>
+					</article>
+				))
+			}
+		</section>
 
-				<div class="socials" aria-label="Social links">
-					<a href="https://www.instagram.com/regal_state" aria-label="Instagram" target="_blank" rel="noreferrer">
-						<svg viewBox="0 0 24 24" aria-hidden="true">
-							<rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
-							<circle cx="12" cy="12" r="4"></circle>
-							<circle class="fill" cx="17.4" cy="6.6" r="1.2"></circle>
-						</svg>
-					</a>
+		<section class="shell colophon">
+			<hr class="rule" />
+			<p>
+				{questionCount} questions open · {artifactCount} artifacts so far. The
+				full record — every artifact, dated — lives in the{' '}
+				<a href="/archive">archive</a>.
+			</p>
+		</section>
+	</main>
 
-					<a href="https://www.youtube.com/@regalstate" aria-label="YouTube" target="_blank" rel="noreferrer">
-						<svg viewBox="0 0 24 24" aria-hidden="true">
-							<rect x="2.5" y="5.5" width="19" height="13" rx="4"></rect>
-							<path class="fill" d="M10 9.2 15.2 12 10 14.8z"></path>
-						</svg>
-					</a>
-				</div>
-			</section>
-		</main>
+	<footer class="site-footer shell">
+		<a href={`mailto:${site.email}`}>{site.email}</a>
+		<span>
+			<a href={site.instagram} target="_blank" rel="noreferrer">Instagram</a>
+			{' / '}
+			<a href={site.youtube} target="_blank" rel="noreferrer">YouTube</a>
+		</span>
+	</footer>
+</Layout>
 
-		<script>
-			const modal = document.getElementById('password-modal');
-			const closeBtn = document.getElementById('modal-close');
-			const submitBtn = document.getElementById('password-submit');
-			const input = document.getElementById('password-input');
-			const errorMsg = document.getElementById('modal-error');
-
-			document.getElementById('locked-preview-btn').addEventListener('click', () => {
-				modal.classList.add('active');
-				input.focus();
-			});
-
-			closeBtn.addEventListener('click', () => {
-				modal.classList.remove('active');
-				errorMsg.textContent = '';
-				input.value = '';
-			});
-
-			modal.addEventListener('click', (e) => {
-				if (e.target === modal) {
-					modal.classList.remove('active');
-					errorMsg.textContent = '';
-					input.value = '';
-				}
-			});
-
-			input.addEventListener('keydown', (e) => {
-				if (e.key === 'Enter') {
-					submitBtn.click();
-				}
-			});
-
-			submitBtn.addEventListener('click', () => {
-				const password = input.value.trim();
-				if (password === 'preview123') {
-					modal.classList.remove('active');
-					errorMsg.textContent = '';
-					input.value = '';
-					window.location.href = '/prototype';
-				} else {
-					errorMsg.textContent = 'Incorrect password. Try again.';
-					input.value = '';
-					input.focus();
-				}
-			});
-		</script>
-	</body>
-</html>
+<script>
+	document.getElementById('lock-button')?.addEventListener('click', () => {
+		window.dispatchEvent(new CustomEvent('gate:request'));
+	});
+</script>
 
 <style>
-	:root {
-		color-scheme: light;
-		--bg: #fbf8f3;
-		--ink: #141414;
-		--soft-ink: rgba(20, 20, 20, 0.76);
-		--line: rgba(20, 20, 20, 0.72);
-		--panel: rgba(255, 255, 255, 0.22);
-
-		--safe-top: env(safe-area-inset-top, 0px);
-		--safe-right: env(safe-area-inset-right, 0px);
-		--safe-bottom: env(safe-area-inset-bottom, 0px);
-		--safe-left: env(safe-area-inset-left, 0px);
+	.opening {
+		padding: clamp(3.5rem, 9vw, 7rem) 0 clamp(2.5rem, 6vw, 4.5rem);
 	}
 
-	*,
-	*::before,
-	*::after {
-		box-sizing: border-box;
+	.opening h1 {
+		margin: 1.4rem 0 0;
+		max-width: 24ch;
+		font-size: clamp(2rem, 4.6vw, 3.6rem);
+		font-weight: 300;
+		line-height: 1.08;
+		letter-spacing: -0.03em;
 	}
 
-	html {
-		height: 100%;
-		margin: 0;
-		background-color: var(--bg);
-		-webkit-text-size-adjust: 100%;
+	.opening-line {
+		margin: 1.6rem 0 0;
+		max-width: 58ch;
+		font-size: clamp(1.02rem, 1.6vw, 1.18rem);
+		color: var(--muted);
 	}
 
-	body {
-		margin: 0;
-		min-height: 100%;
-		min-height: 100svh;
-		min-height: 100dvh;
-		position: relative;
-		overflow-x: hidden;
-		background-color: var(--bg);
-		font-family: Georgia, "Times New Roman", serif;
-		color: var(--ink);
-		isolation: isolate;
+	.latest {
+		padding: clamp(2rem, 4vw, 3rem) 0;
 	}
 
-	a {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	/* Fixed background layer */
-	body::before {
-		content: "";
-		position: fixed;
-		inset: 0;
-		background:
-			linear-gradient(rgba(251, 248, 243, 0.72), rgba(251, 248, 243, 0.72)),
-			url("/bg3.webp") center center / cover no-repeat;
-		pointer-events: none;
-		z-index: -3;
-		transform: translateZ(0);
-	}
-
-	/* Grain */
-	body::after {
-		content: "";
-		position: fixed;
-		inset: -10%;
-		background: url("/grain.webp") center center / 320px repeat;
-		opacity: 0.22;
-		mix-blend-mode: multiply;
-		filter: contrast(1) brightness(0.96);
-		pointer-events: none;
-		z-index: -2;
-		transform: translateZ(0);
-	}
-
-	.hero {
-		position: relative;
-		z-index: 1;
-		min-height: 100svh;
-		min-height: 100dvh;
+	.latest-grid {
 		display: grid;
-		place-items: center;
-		padding:
-			calc(var(--safe-top) + 1rem)
-			calc(var(--safe-right) + 1rem)
-			calc(var(--safe-bottom) + 1rem)
-			calc(var(--safe-left) + 1rem);
+		grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+		gap: clamp(1.6rem, 3.5vw, 3.5rem);
+		align-items: start;
+		padding-top: clamp(1.8rem, 4vw, 3rem);
 	}
 
-	.hero::before {
-		content: "";
-		position: fixed;
-		inset: 0;
-		background:
-			radial-gradient(circle at top, rgba(255, 255, 255, 0.44), transparent 52%),
-			linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.3));
-		pointer-events: none;
-		z-index: -1;
-		transform: translateZ(0);
+	.latest-copy h2 {
+		margin: 1.2rem 0 0;
+		font-size: clamp(1.7rem, 3.2vw, 2.6rem);
+		font-weight: 300;
+		line-height: 1.05;
+		letter-spacing: -0.03em;
 	}
 
-	.content {
-		width: min(920px, 100%);
-		max-width: 100%;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		gap: clamp(0.8rem, 1.5vh, 1.05rem);
-		padding: clamp(1rem, 2vw, 2rem) 0;
+	.latest-copy a:hover {
+		color: var(--accent);
 	}
 
-	.eyebrow {
-		margin: 0;
-		font-family: Arial, Helvetica, sans-serif;
+	.latest-summary {
+		margin: 1.1rem 0 0;
+		color: var(--muted);
+	}
+
+	.latest-meta {
+		margin: 1rem 0 0;
+		font-family: var(--mono);
+		font-size: 0.72rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--soft);
+	}
+
+	.inquiry {
+		padding-bottom: clamp(2rem, 4vw, 3.2rem);
+	}
+
+	.inquiry-head {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: clamp(1.2rem, 3vw, 2.4rem);
+		align-items: start;
+		padding-top: clamp(1.8rem, 4vw, 3rem);
+	}
+
+	.inquiry-number {
+		font-family: var(--mono);
 		font-size: 0.78rem;
-		font-weight: 600;
-		letter-spacing: 0.24em;
-		text-transform: uppercase;
-		color: var(--soft-ink);
+		color: var(--soft);
+		padding-top: 0.5em;
 	}
 
-	h1 {
+	.inquiry-question {
 		margin: 0;
-		max-width: 12ch;
-		font-size: clamp(2.6rem, 7vw, 6.6rem);
-		line-height: 0.98;
-		font-weight: 500;
-		letter-spacing: -0.055em;
+		max-width: 22ch;
+		font-size: clamp(1.55rem, 3.4vw, 2.7rem);
+		font-weight: 300;
+		line-height: 1.06;
+		letter-spacing: -0.035em;
+	}
+
+	.inquiry-line {
+		margin: 0.8rem 0 0;
+		max-width: 62ch;
+		color: var(--muted);
+	}
+
+	.artifact-list {
+		margin: 1.6rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.artifact-list li + li {
+		border-top: 1px solid var(--hairline);
+	}
+
+	.artifact-row {
 		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.08em;
-		text-wrap: balance;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1.5rem;
+		padding: 0.85rem 0;
+		transition: color 160ms ease;
 	}
 
-	.headline-rotator {
-		position: relative;
-		display: inline-flex;
-		align-items: flex-start;
-		justify-content: center;
-		min-width: 11ch;
-		height: 1.18em;
-		overflow: hidden;
-		-webkit-mask-image: linear-gradient(
-			to bottom,
-			transparent 0%,
-			rgba(0, 0, 0, 0.18) 5%,
-			#000 18%,
-			#000 82%,
-			rgba(0, 0, 0, 0.18) 95%,
-			transparent 100%
-		);
-		mask-image: linear-gradient(
-			to bottom,
-			transparent 0%,
-			rgba(0, 0, 0, 0.18) 5%,
-			#000 18%,
-			#000 82%,
-			rgba(0, 0, 0, 0.18) 95%,
-			transparent 100%
-		);
+	.artifact-row:hover {
+		color: var(--accent);
 	}
 
-	.headline-track {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		will-change: transform;
-		animation: headline-cycle 4.8s cubic-bezier(0.72, 0, 0.28, 1) infinite;
+	.artifact-title {
+		font-size: 1.12rem;
 	}
 
-	.headline-word {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 1.18em;
-		padding-bottom: 0.08em;
-	}
-
-	.headline-static {
-		display: block;
-		color: rgba(20, 20, 20, 0.84);
-	}
-
-	.meta {
-		margin: 0;
-		font-family: Arial, Helvetica, sans-serif;
-		font-size: clamp(0.92rem, 1.35vw, 1.12rem);
-		letter-spacing: 0.16em;
+	.artifact-meta {
+		font-family: var(--mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		color: var(--soft-ink);
+		color: var(--soft);
+		white-space: nowrap;
 	}
 
-	.cta {
-		margin-top: 0.2rem;
-		padding: 0.95rem 1.7rem;
-		border: 1px solid var(--line);
-		background: var(--panel);
-		font-family: Arial, Helvetica, sans-serif;
-		font-size: 0.92rem;
-		font-weight: 600;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
+	.inquiry-threads {
+		margin-top: 1.4rem;
 	}
 
-	.cta-row {
-		display: flex;
-		gap: 0.75rem;
-		margin-top: 0.2rem;
+	.inquiry-threads ul {
+		margin: 0.7rem 0 0;
+		padding: 0;
+		list-style: none;
+		color: var(--muted);
 	}
 
-	.cta-row .cta {
-		cursor: pointer;
+	.inquiry-threads li::before {
+		content: '— ';
+		color: var(--soft);
 	}
 
-	.modal-overlay {
+	.colophon {
+		padding: 2rem 0 0;
+	}
+
+	.colophon p {
+		margin: 1.6rem 0 0;
+		color: var(--soft);
+	}
+
+	.colophon a {
+		color: var(--muted);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.colophon a:hover {
+		color: var(--ink);
+	}
+
+	.nav-lock {
 		display: none;
-		position: fixed;
-		inset: 0;
-		background: rgba(20, 20, 20, 0.6);
-		backdrop-filter: blur(4px);
-		-webkit-backdrop-filter: blur(4px);
-		z-index: 100;
-		align-items: center;
-		justify-content: center;
 	}
 
-	.modal-overlay.active {
-		display: flex;
+	.nav-lock {
+		display: inline;
 	}
 
-	.modal {
-		background: var(--bg);
-		padding: 2.5rem 2rem;
-		border: 1px solid var(--line);
-		max-width: 360px;
-		width: 90%;
-		text-align: center;
-		position: relative;
-	}
-
-	.modal-close {
-		position: absolute;
-		top: 0.75rem;
-		right: 1rem;
+	#lock-button {
 		background: none;
-		border: none;
-		font-size: 1.8rem;
+		border: 0;
+		padding: 0;
+		font: inherit;
+		color: var(--muted);
+		letter-spacing: inherit;
+		text-transform: inherit;
 		cursor: pointer;
-		color: var(--soft-ink);
-		line-height: 1;
+		transition: color 160ms ease;
 	}
 
-	.modal h2 {
-		margin: 0 0 0.5rem;
-		font-size: 1.4rem;
-		font-weight: 500;
+	#lock-button:hover {
+		color: var(--ink);
 	}
 
-	.modal p {
-		margin: 0 0 1.2rem;
-		color: var(--soft-ink);
-		font-size: 0.95rem;
-	}
+	@media (max-width: 880px) {
+		.latest-grid {
+			grid-template-columns: 1fr;
+		}
 
-	.modal input {
-		width: 100%;
-		padding: 0.85rem 1rem;
-		border: 1px solid rgba(20, 20, 20, 0.24);
-		background: rgba(255, 255, 255, 0.5);
-		font-family: inherit;
-		font-size: 1rem;
-		text-align: center;
-		margin-bottom: 0.75rem;
-	}
-
-	.modal input:focus {
-		outline: none;
-		border-color: var(--ink);
-	}
-
-	.modal-error {
-		color: #c00;
-		font-size: 0.85rem;
-		margin-bottom: 0.75rem;
-		min-height: 1.2em;
-	}
-
-	.modal .cta {
-		width: 100%;
-		cursor: pointer;
-	}
-
-	.email {
-		margin-top: clamp(0.85rem, 3vh, 2.2rem);
-		width: min(100%, 42rem);
-		font-size: clamp(1rem, 2vw, 1.18rem);
-		letter-spacing: 0.02em;
-	}
-
-	.email-shell {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 100%;
-		padding: 0.78rem 1rem;
-		border: 1px solid rgba(20, 20, 20, 0.16);
-		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.3);
-		box-shadow:
-			0 10px 30px rgba(20, 20, 20, 0.05),
-			inset 0 1px 0 rgba(255, 255, 255, 0.55);
-		backdrop-filter: blur(10px);
-		-webkit-backdrop-filter: blur(10px);
-		font-family: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-	}
-
-	.email-text {
-		position: relative;
-		display: inline-block;
-		max-width: 100%;
-		color: rgba(20, 20, 20, 0.9);
-		overflow-wrap: anywhere;
-		word-break: break-word;
-	}
-
-	.email-text::after {
-		content: "";
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: -0.14rem;
-		height: 1px;
-		background: linear-gradient(
-			90deg,
-			rgba(20, 20, 20, 0),
-			rgba(20, 20, 20, 0.42),
-			rgba(20, 20, 20, 0)
-		);
-		transform-origin: center;
-		animation: email-glow 3.4s ease-in-out infinite;
-	}
-
-	.socials {
-		display: flex;
-		gap: 1rem;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.socials a {
-		width: 3.2rem;
-		height: 3.2rem;
-		display: grid;
-		place-items: center;
-		border: 1px solid rgba(20, 20, 20, 0.24);
-		border-radius: 1rem;
-		background: rgba(255, 255, 255, 0.24);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
-	}
-
-	.socials svg {
-		width: 1.55rem;
-		height: 1.55rem;
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 1.7;
-		stroke-linecap: round;
-		stroke-linejoin: round;
-	}
-
-	.socials .fill {
-		fill: currentColor;
-		stroke: none;
+		.latest-embed {
+			order: -1;
+		}
 	}
 
 	@media (max-width: 720px) {
-		.hero {
-			padding:
-				calc(var(--safe-top) + 0.85rem)
-				calc(var(--safe-right) + 0.9rem)
-				calc(var(--safe-bottom) + 0.9rem)
-				calc(var(--safe-left) + 0.9rem);
-		}
-
-		.content {
-			gap: 0.85rem;
-		}
-
-		h1 {
-			max-width: 9.4ch;
-			font-size: clamp(2.25rem, 11vw, 4.15rem);
-		}
-
-		.headline-rotator {
-			min-width: 8.7ch;
-		}
-
-		.meta {
-			font-size: 0.82rem;
-			letter-spacing: 0.12em;
-		}
-
-		.cta {
-			padding: 0.85rem 1.35rem;
-			font-size: 0.82rem;
-		}
-
-		.email {
-			font-size: 0.96rem;
-		}
-
-		.email-shell {
-			padding: 0.72rem 0.9rem;
-		}
-
-		.socials a {
-			width: 3rem;
-			height: 3rem;
-		}
-	}
-
-	@media (max-width: 430px) {
-		h1 {
-			max-width: 8.8ch;
-			font-size: clamp(2.05rem, 10.8vw, 3.35rem);
-		}
-
-		.headline-rotator {
-			min-width: 8.05ch;
-		}
-
-		.meta {
-			font-size: 0.76rem;
-			letter-spacing: 0.1em;
-		}
-
-		.email {
-			font-size: 0.92rem;
-		}
-	}
-
-	@media (max-height: 760px) {
-		.hero {
-			padding-top: calc(var(--safe-top) + 0.7rem);
-			padding-bottom: calc(var(--safe-bottom) + 0.7rem);
-		}
-
-		.content {
-			gap: 0.72rem;
-		}
-
-		h1 {
-			font-size: clamp(2.15rem, 8.2vh, 4.6rem);
-		}
-
-		.email {
-			margin-top: 0.8rem;
-		}
-	}
-
-	@keyframes headline-cycle {
-		0% {
-			transform: translateY(0);
-		}
-		33.333% {
-			transform: translateY(-1.18em);
-		}
-		66.666% {
-			transform: translateY(-2.36em);
-		}
-		100% {
-			transform: translateY(-3.54em);
-		}
-	}
-
-	@keyframes email-glow {
-		0%,
-		100% {
-			opacity: 0.35;
-			transform: scaleX(0.82);
-		}
-		50% {
-			opacity: 0.8;
-			transform: scaleX(1);
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.headline-rotator {
-			min-width: auto;
-			height: auto;
-			overflow: visible;
-			-webkit-mask-image: none;
-			mask-image: none;
-		}
-
-		.headline-track {
-			animation: none;
-		}
-
-		.headline-word {
-			display: none;
-		}
-
-		.headline-word:first-child {
-			display: flex;
-		}
-
-		.email-text::after {
-			animation: none;
+		.artifact-row {
+			flex-direction: column;
+			gap: 0.3rem;
+			align-items: flex-start;
 		}
 	}
 </style>

@@ -1,0 +1,272 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Gate from '../../components/Gate.astro';
+import YouTubeEmbed from '../../components/YouTubeEmbed.astro';
+import {
+	site,
+	artifacts,
+	getArtifactBySlug,
+	type Artifact,
+} from '../../data/site';
+
+export function getStaticPaths() {
+	return artifacts.map((artifact) => ({
+		params: { slug: artifact.slug },
+		props: { artifact },
+	}));
+}
+
+interface Props {
+	artifact: Artifact;
+}
+
+const { artifact } = Astro.props;
+
+function formatDate(date: string) {
+	return new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric',
+	});
+}
+
+const inquiryQuestions: Record<string, string> = {
+	repetition: 'Why do artists repeat themselves?',
+	'visible-technique': 'What happens when technique becomes visible?',
+	ugliness: 'Can ugliness be beautiful?',
+};
+
+const questionTitles = artifact.questions
+	.map((slug) => inquiryQuestions[slug])
+	.filter(Boolean);
+
+const contradicts = artifact.contradicts
+	? getArtifactBySlug(artifact.contradicts.slug)
+	: undefined;
+---
+
+<Layout title={`${artifact.title} — ${site.name}`} description={artifact.summary}>
+	<Gate email={site.email} />
+
+	<header class="site-header shell">
+		<a href="/" class="wordmark">Regal State <em>/ TV</em></a>
+		<nav class="site-nav" aria-label="Primary">
+			<a href="/">Questions</a>
+			<a href="/archive">Archive</a>
+		</nav>
+	</header>
+
+	<main class="shell">
+		<article>
+			<header class="work-head">
+				<p class="kicker">
+					{artifact.kind} · {formatDate(artifact.date)} · {artifact.duration}
+				</p>
+				<h1>{artifact.title}</h1>
+				<p class="work-summary">{artifact.summary}</p>
+				{
+					questionTitles.length > 0 && (
+						<p class="work-questions">
+							Part of{' '}
+							{questionTitles.map((q, i) => (
+								<>
+									{i > 0 && ' and '}
+									<span class="q">{q}</span>
+								</>
+							))}
+							.
+						</p>
+					)
+				}
+			</header>
+
+			{
+				artifact.youtubeId && (
+					<section class="work-embed">
+						<YouTubeEmbed id={artifact.youtubeId} title={artifact.title} />
+					</section>
+				)
+			}
+
+			<section class="work-journey">
+				<div class="journey-block">
+					<p class="kicker">What triggered this</p>
+					<p class="journey-copy">{artifact.triggeredBy}</p>
+				</div>
+
+				<div class="journey-block">
+					<p class="kicker">References in conversation</p>
+					<ul class="reference-list">
+						{
+							artifact.references.map((reference) => (
+								<li>
+									<span class="reference-label">{reference.label}</span>
+									<span class="reference-meta">{reference.meta}</span>
+								</li>
+							))
+						}
+					</ul>
+				</div>
+
+				{
+					contradicts && (
+						<div class="journey-block">
+							<p class="kicker">In argument with</p>
+							<a class="contradiction" href={`/watch/${contradicts.slug}`}>
+								{contradicts.title} <span aria-hidden="true">→</span>
+							</a>
+						</div>
+					)
+				}
+
+				<div class="journey-block">
+					<p class="kicker">Unresolved</p>
+					<ul class="open-list">
+						{artifact.openQuestions.map((question) => (
+							<li>{question}</li>
+						))}
+					</ul>
+				</div>
+			</section>
+		</article>
+
+		<nav class="work-next" aria-label="More artifacts">
+			<a href="/archive">← Everything in the archive</a>
+		</nav>
+	</main>
+
+	<footer class="site-footer shell">
+		<a href={`mailto:${site.email}`}>{site.email}</a>
+		<span>
+			<a href={site.instagram} target="_blank" rel="noreferrer">Instagram</a>
+			{' / '}
+			<a href={site.youtube} target="_blank" rel="noreferrer">YouTube</a>
+		</span>
+	</footer>
+</Layout>
+
+<style>
+	.work-head {
+		padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(1.6rem, 3vw, 2.5rem);
+	}
+
+	.work-head h1 {
+		margin: 1.2rem 0 0;
+		max-width: 18ch;
+		font-size: clamp(2.2rem, 5.4vw, 4rem);
+		font-weight: 300;
+		line-height: 1.02;
+		letter-spacing: -0.04em;
+	}
+
+	.work-summary {
+		margin: 1.2rem 0 0;
+		max-width: 58ch;
+		font-size: clamp(1.02rem, 1.6vw, 1.18rem);
+		color: var(--muted);
+	}
+
+	.work-questions {
+		margin: 1.1rem 0 0;
+		color: var(--soft);
+		font-size: 0.95rem;
+	}
+
+	.work-questions .q {
+		color: var(--muted);
+		font-style: italic;
+	}
+
+	.work-embed {
+		margin: clamp(1.5rem, 3vw, 2.5rem) 0 0;
+	}
+
+	.work-journey {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: clamp(2rem, 4vw, 3.5rem);
+		margin-top: clamp(2.5rem, 5vw, 4rem);
+		padding-top: clamp(1.8rem, 4vw, 2.8rem);
+		border-top: 1px solid var(--hairline);
+	}
+
+	.journey-block .kicker {
+		margin-bottom: 0.9rem;
+	}
+
+	.journey-copy {
+		margin: 0;
+		max-width: 46ch;
+		color: var(--muted);
+	}
+
+	.reference-list,
+	.open-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.reference-list li {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 1rem;
+		padding: 0.55rem 0;
+		border-bottom: 1px solid var(--hairline);
+	}
+
+	.reference-meta {
+		font-family: var(--mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--soft);
+		white-space: nowrap;
+	}
+
+	.contradiction {
+		display: inline-flex;
+		gap: 0.5rem;
+		font-size: 1.15rem;
+		font-style: italic;
+		transition: color 160ms ease;
+	}
+
+	.contradiction:hover {
+		color: var(--accent);
+	}
+
+	.open-list li {
+		padding: 0.45rem 0;
+		color: var(--muted);
+	}
+
+	.open-list li::before {
+		content: '— ';
+		color: var(--soft);
+	}
+
+	.work-next {
+		margin-top: clamp(3rem, 6vw, 5rem);
+	}
+
+	.work-next a {
+		font-family: var(--mono);
+		font-size: 0.74rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--soft);
+		transition: color 160ms ease;
+	}
+
+	.work-next a:hover {
+		color: var(--ink);
+	}
+
+	@media (max-width: 720px) {
+		.work-journey {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

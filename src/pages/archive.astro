@@ -1,0 +1,160 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Gate from '../components/Gate.astro';
+import { site, getChronologicalArtifacts, inquiries } from '../data/site';
+
+const entries = getChronologicalArtifacts();
+
+function questionFor(slug: string) {
+	return inquiries.find((inquiry) => inquiry.slug === slug)?.question;
+}
+
+function formatDate(date: string) {
+	return new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric',
+	});
+}
+---
+
+<Layout title={`Archive — ${site.name}`}>
+	<Gate email={site.email} />
+
+	<header class="site-header shell">
+		<a href="/" class="wordmark">Regal State <em>/ TV</em></a>
+		<nav class="site-nav" aria-label="Primary">
+			<a href="/">Questions</a>
+			<a href="/archive" aria-current="page">Archive</a>
+		</nav>
+	</header>
+
+	<main class="shell">
+		<section class="archive-head">
+			<p class="kicker">The full record</p>
+			<h1>Archive</h1>
+			<p class="archive-line">
+				Every artifact, dated. No categories — the questions are the
+				organization. {entries.length} pieces so far.
+			</p>
+		</section>
+
+		<ul class="archive-list">
+			{
+				entries.map((entry) => (
+					<li>
+						<a class="row" href={`/watch/${entry.slug}`}>
+							<span class="row-date">{formatDate(entry.date)}</span>
+							<span class="row-main">
+								<span class="row-title">{entry.title}</span>
+								<span class="row-summary">{entry.summary}</span>
+								<span class="row-questions">
+									{entry.questions.map((q) => questionFor(q)).filter(Boolean).join(' · ')}
+								</span>
+							</span>
+							<span class="row-kind">
+								{entry.kind} · {entry.duration}
+							</span>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</main>
+
+	<footer class="site-footer shell">
+		<a href={`mailto:${site.email}`}>{site.email}</a>
+		<span>
+			<a href={site.instagram} target="_blank" rel="noreferrer">Instagram</a>
+			{' / '}
+			<a href={site.youtube} target="_blank" rel="noreferrer">YouTube</a>
+		</span>
+	</footer>
+</Layout>
+
+<style>
+	.archive-head {
+		padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(1.8rem, 4vw, 3rem);
+	}
+
+	.archive-head h1 {
+		margin: 1.2rem 0 0;
+		font-size: clamp(2.4rem, 6vw, 4.2rem);
+		font-weight: 300;
+		line-height: 1;
+		letter-spacing: -0.04em;
+	}
+
+	.archive-line {
+		margin: 1.2rem 0 0;
+		max-width: 52ch;
+		color: var(--muted);
+	}
+
+	.archive-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border-top: 1px solid var(--hairline);
+	}
+
+	.row {
+		display: grid;
+		grid-template-columns: 10rem minmax(0, 1fr) auto;
+		gap: clamp(1rem, 2.5vw, 2.5rem);
+		align-items: baseline;
+		padding: 1.3rem 0;
+		border-bottom: 1px solid var(--hairline);
+		transition: color 160ms ease;
+	}
+
+	.row:hover .row-title {
+		color: var(--accent);
+	}
+
+	.row-date,
+	.row-kind {
+		font-family: var(--mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--soft);
+		white-space: nowrap;
+	}
+
+	.row-title {
+		display: block;
+		font-size: 1.25rem;
+		letter-spacing: -0.01em;
+		transition: color 160ms ease;
+	}
+
+	.row-summary {
+		display: block;
+		margin-top: 0.35rem;
+		max-width: 64ch;
+		color: var(--muted);
+		font-size: 0.95rem;
+	}
+
+	.row-questions {
+		display: block;
+		margin-top: 0.5rem;
+		font-family: var(--mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--soft);
+	}
+
+	@media (max-width: 880px) {
+		.row {
+			grid-template-columns: minmax(0, 1fr) auto;
+		}
+
+		.row-date {
+			grid-column: 1 / -1;
+			margin-bottom: 0.4rem;
+		}
+	}
+</style>

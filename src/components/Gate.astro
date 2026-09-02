@@ -1,0 +1,193 @@
+---
+interface Props {
+	email: string;
+}
+
+const { email } = Astro.props;
+---
+
+<div class="gate" id="gate" hidden>
+	<div class="gate-overlay"></div>
+	<div class="gate-panel" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+		<p class="kicker">Regal State</p>
+		<h1 id="gate-title">Locked</h1>
+		<p class="gate-copy">
+			This is a working preview of the site. Enter the password to look around.
+		</p>
+		<form id="gate-form">
+			<input
+				type="password"
+				id="gate-input"
+				placeholder="Password"
+				autocomplete="off"
+				aria-label="Password"
+			/>
+			<p class="gate-error" id="gate-error" role="alert"></p>
+			<button type="submit" class="gate-submit">Enter</button>
+		</form>
+		<p class="gate-contact">
+			No password? <a href={`mailto:${email}`}>Write to us</a>.
+		</p>
+	</div>
+</div>
+
+<script>
+	const gate = document.getElementById('gate') as HTMLElement | null;
+
+	function openGate() {
+		if (!gate) return;
+		gate.hidden = false;
+		document.documentElement.setAttribute('data-locked', '');
+		(gate.querySelector('#gate-input') as HTMLInputElement | null)?.focus();
+	}
+
+	function closeGate() {
+		if (!gate) return;
+		gate.hidden = true;
+		document.documentElement.removeAttribute('data-locked');
+	}
+
+	if (gate) {
+		const form = gate.querySelector('#gate-form') as HTMLFormElement;
+		const input = gate.querySelector('#gate-input') as HTMLInputElement;
+		const error = gate.querySelector('#gate-error') as HTMLElement;
+
+		form.addEventListener('submit', (event) => {
+			event.preventDefault();
+			if (input.value.trim() === 'preview123') {
+				try {
+					localStorage.setItem('rs_unlocked', 'yes');
+				} catch {
+					/* storage unavailable */
+				}
+				error.textContent = '';
+				input.value = '';
+				closeGate();
+				window.dispatchEvent(new CustomEvent('gate:unlocked'));
+			} else {
+				error.textContent = 'Incorrect password.';
+				input.value = '';
+				input.focus();
+			}
+		});
+
+		gate.querySelector('.gate-overlay')?.addEventListener('click', () => {
+			if (gate.hidden) return;
+			closeGate();
+		});
+
+		document.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape' && !gate.hidden) closeGate();
+		});
+
+		if (document.documentElement.hasAttribute('data-locked')) {
+			gate.hidden = false;
+			input.focus();
+		}
+	}
+
+	window.addEventListener('gate:request', openGate);
+</script>
+
+<style>
+	.gate {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+	}
+
+	.gate-overlay {
+		position: absolute;
+		inset: 0;
+		background: rgba(12, 12, 12, 0.92);
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
+	}
+
+	.gate-panel {
+		position: relative;
+		width: min(400px, calc(100% - 40px));
+		margin: 18svh auto 0;
+		padding: 2.4rem 2.2rem 2rem;
+		border: 1px solid var(--hairline);
+		background: var(--bg);
+	}
+
+	.gate-panel h1 {
+		margin: 1.1rem 0 0.6rem;
+		font-size: clamp(2rem, 5vw, 2.6rem);
+		font-weight: 300;
+		letter-spacing: -0.03em;
+		line-height: 1;
+	}
+
+	.gate-copy {
+		margin: 0 0 1.6rem;
+		color: var(--muted);
+		font-size: 0.95rem;
+	}
+
+	#gate-input {
+		width: 100%;
+		padding: 0.8rem 0.9rem;
+		border: 1px solid var(--hairline-strong);
+		background: transparent;
+		color: var(--ink);
+		font-family: var(--mono);
+		font-size: 0.9rem;
+		letter-spacing: 0.06em;
+		text-align: center;
+	}
+
+	#gate-input:focus {
+		outline: none;
+		border-color: var(--accent);
+	}
+
+	.gate-error {
+		min-height: 1.3em;
+		margin: 0.5rem 0 0.3rem;
+		color: #c96f5e;
+		font-family: var(--mono);
+		font-size: 0.74rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.gate-submit {
+		width: 100%;
+		padding: 0.85rem;
+		border: 1px solid var(--hairline-strong);
+		background: transparent;
+		color: var(--ink);
+		font-family: var(--mono);
+		font-size: 0.78rem;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		cursor: pointer;
+		transition:
+			background-color 160ms ease,
+			color 160ms ease;
+	}
+
+	.gate-submit:hover {
+		background: var(--ink);
+		color: var(--bg);
+	}
+
+	.gate-contact {
+		margin: 1.6rem 0 0;
+		color: var(--soft);
+		font-size: 0.85rem;
+	}
+
+	.gate-contact a {
+		color: var(--muted);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.gate-contact a:hover {
+		color: var(--ink);
+	}
+</style>
