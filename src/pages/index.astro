@@ -1,128 +1,123 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Gate from '../components/Gate.astro';
-import YouTubeEmbed from '../components/YouTubeEmbed.astro';
-import {
-	site,
-	inquiries,
-	artifacts,
-	getArtifactBySlug,
-	getChronologicalArtifacts,
-} from '../data/site';
+import { site, inquiries, artifacts, getArtifactBySlug, getChronologicalArtifacts } from '../data/site';
 
 const latest = getChronologicalArtifacts()[0];
-const artifactCount = artifacts.length;
-const questionCount = inquiries.length;
+const ideaCount = 3;
 
-const inquiriesWithArtifacts = inquiries.map((inquiry) => ({
+const board = inquiries.map((inquiry) => ({
 	...inquiry,
 	artifacts: inquiry.artifactSlugs
 		.map(getArtifactBySlug)
 		.filter((a): a is NonNullable<typeof a> => Boolean(a)),
 }));
+
+const tensions = artifacts
+	.filter((a) => a.contradicts)
+	.map((a) => ({
+		from: a,
+		to: getArtifactBySlug(a.contradicts!.slug)!,
+		label: a.contradicts!.label,
+	}))
+	.filter((t) => t.to && t.from.slug < t.to.slug);
 ---
 
 <Layout title={`${site.name} — ${site.tagline}`}>
 	<Gate email={site.email} />
 
-	<header class="site-header shell">
-		<a href="/" class="wordmark">Regal State <em>/ TV</em></a>
-		<nav class="site-nav" aria-label="Primary">
-			<a href="/" aria-current="page">Questions</a>
-			<a href="/archive">Archive</a>
-			<button class="nav-lock" type="button" id="lock-button">Lock</button>
-		</nav>
-	</header>
+	<div class="board">
+		<header class="board-header">
+			<a href="/" class="wordmark">Regal State <em>/ TV</em></a>
+			<nav class="site-nav" aria-label="Primary">
+				<a href="/" aria-current="page">Questions</a>
+				<a href="/archive">Archive</a>
+				<button class="nav-lock" type="button" id="lock-button">Lock</button>
+			</nav>
+		</header>
 
-	<main>
-		<section class="shell opening">
-			<p class="kicker">An index of open questions</p>
-			<h1>
-				This is not a feed. It is a set of questions we are investigating in
-				public, one artifact at a time.
-			</h1>
-			<p class="opening-line">
-				Every video below is a piece of an ongoing inquiry — with the references
-				that shaped it, the arguments it enters, and the questions it leaves
-				open. Where it goes next is unwritten.
-			</p>
-		</section>
+		<p class="board-standfirst">
+			{board.length} questions open · {artifacts.length} artifacts · {ideaCount} seeds ·
+			unresolved on purpose
+		</p>
 
-		{
-			latest && (
-				<section class="shell latest" aria-labelledby="latest-heading">
-					<hr class="rule" />
-					<div class="latest-grid">
-						<div class="latest-copy">
-							<p class="kicker">Latest artifact</p>
-							<h2 id="latest-heading">
-								<a href={`/watch/${latest.slug}`}>{latest.title}</a>
-							</h2>
-							<p class="latest-summary">{latest.summary}</p>
-							<p class="latest-meta">
-								{latest.date} · {latest.duration}
-							</p>
-						</div>
-						<div class="latest-embed">
-							<YouTubeEmbed id={latest.youtubeId!} title={latest.title} />
-						</div>
-					</div>
-				</section>
-			)
-		}
-
-		<section class="shell index" aria-label="Open questions">
+		<div class="board-body">
 			{
-				inquiriesWithArtifacts.map((inquiry, i) => (
-					<article class="inquiry">
-						<hr class="rule" />
-						<header class="inquiry-head">
-							<span class="inquiry-number">
-								{String(i + 1).padStart(2, '0')}
-							</span>
-							<div>
-								<h3 class="inquiry-question">{inquiry.question}</h3>
-								<p class="inquiry-line">{inquiry.line}</p>
-							</div>
-						</header>
+				board.map((inquiry, i) => (
+					<section class="column" aria-label={inquiry.question}>
+						<p class="column-number kicker">{String(i + 1).padStart(2, '0')}</p>
+						<h2 class="column-question">
+							<a href={`#q-${inquiry.slug}`}>{inquiry.question}</a>
+						</h2>
 
-						<ul class="artifact-list">
+						<ul class="column-artifacts">
 							{inquiry.artifacts.map((artifact) => (
 								<li>
-									<a class="artifact-row" href={`/watch/${artifact.slug}`}>
+									<a class="artifact" href={`/watch/${artifact.slug}`}>
 										<span class="artifact-title">{artifact.title}</span>
-										<span class="artifact-meta">
-											{artifact.kind} · {artifact.duration}
-										</span>
+										<span class="artifact-meta">{artifact.duration}</span>
 									</a>
 								</li>
 							))}
 						</ul>
 
-						<div class="inquiry-threads">
-							<p class="kicker">Still open here</p>
+						<div class="column-open">
+							<p class="open-kicker">Still open</p>
 							<ul>
 								{inquiry.openThreads.map((thread) => (
 									<li>{thread}</li>
 								))}
 							</ul>
 						</div>
-					</article>
+					</section>
 				))
 			}
-		</section>
 
-		<section class="shell colophon">
-			<hr class="rule" />
-			<p>
-				{questionCount} questions open · {artifactCount} artifacts so far. The
-				full record — every artifact, dated — lives in the{' '}
-				<a href="/archive">archive</a>.
-			</p>
-		</section>
-	</main>
+			<aside class="rail">
+				{
+					latest && (
+						<div class="rail-block">
+							<p class="open-kicker">Latest</p>
+							<a class="rail-link" href={`/watch/${latest.slug}`}>
+								<span class="rail-title">{latest.title}</span>
+								<span class="rail-meta">
+									{latest.duration} ·{' '}
+									{new Date(`${latest.date}T00:00:00`).toLocaleDateString('en-GB', {
+										month: 'long',
+										year: 'numeric',
+									})}
+								</span>
+							</a>
+						</div>
+					)
+				}
 
-	<footer class="site-footer shell">
+				{
+					tensions.length > 0 && (
+						<div class="rail-block">
+							<p class="open-kicker">In tension</p>
+							{tensions.map((tension) => (
+								<a class="rail-link" href={`/watch/${tension.from.slug}`}>
+									<span class="rail-title">{tension.from.title}</span>
+									<span class="rail-meta">against {tension.to.title}</span>
+								</a>
+							))}
+						</div>
+					)
+				}
+
+				<div class="rail-block">
+					<p class="open-kicker">Full record</p>
+					<a class="rail-link" href="/archive">
+						<span class="rail-title">Archive</span>
+						<span class="rail-meta">every piece, by state</span>
+					</a>
+				</div>
+			</aside>
+		</div>
+	</div>
+
+	<footer class="board-footer">
 		<a href={`mailto:${site.email}`}>{site.email}</a>
 		<span>
 			<a href={site.instagram} target="_blank" rel="noreferrer">Instagram</a>
@@ -139,171 +134,197 @@ const inquiriesWithArtifacts = inquiries.map((inquiry) => ({
 </script>
 
 <style>
-	.opening {
-		padding: clamp(3.5rem, 9vw, 7rem) 0 clamp(2.5rem, 6vw, 4.5rem);
+	.board {
+		display: flex;
+		flex-direction: column;
+		min-height: 100svh;
+		border-bottom: 1px solid var(--hairline);
 	}
 
-	.opening h1 {
-		margin: 1.4rem 0 0;
-		max-width: 24ch;
-		font-size: clamp(2rem, 4.6vw, 3.6rem);
+	.board-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 1.4rem clamp(18px, 3vw, 40px) 1.2rem;
+		border-bottom: 1px solid var(--hairline);
+	}
+
+	.board-standfirst {
+		margin: 0;
+		padding: 0.7rem clamp(18px, 3vw, 40px);
+		border-bottom: 1px solid var(--hairline);
+		font-family: var(--mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--soft);
+	}
+
+	.board-body {
+		flex: 1;
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(15rem, 0.72fr);
+	}
+
+	.column {
+		display: flex;
+		flex-direction: column;
+		gap: 1.6rem;
+		padding: clamp(1.6rem, 3vw, 2.6rem) clamp(1.2rem, 2.4vw, 2.2rem);
+		border-right: 1px solid var(--hairline);
+		min-width: 0;
+	}
+
+	.column-question {
+		margin: 0;
+		max-width: 16ch;
+		font-size: clamp(1.5rem, 2.6vw, 2.35rem);
 		font-weight: 300;
 		line-height: 1.08;
 		letter-spacing: -0.03em;
 	}
 
-	.opening-line {
-		margin: 1.6rem 0 0;
-		max-width: 58ch;
-		font-size: clamp(1.02rem, 1.6vw, 1.18rem);
-		color: var(--muted);
+	.column-question a {
+		transition: color 160ms ease;
 	}
 
-	.latest {
-		padding: clamp(2rem, 4vw, 3rem) 0;
-	}
-
-	.latest-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-		gap: clamp(1.6rem, 3.5vw, 3.5rem);
-		align-items: start;
-		padding-top: clamp(1.8rem, 4vw, 3rem);
-	}
-
-	.latest-copy h2 {
-		margin: 1.2rem 0 0;
-		font-size: clamp(1.7rem, 3.2vw, 2.6rem);
-		font-weight: 300;
-		line-height: 1.05;
-		letter-spacing: -0.03em;
-	}
-
-	.latest-copy a:hover {
+	.column-question a:hover {
 		color: var(--accent);
 	}
 
-	.latest-summary {
-		margin: 1.1rem 0 0;
-		color: var(--muted);
-	}
-
-	.latest-meta {
-		margin: 1rem 0 0;
-		font-family: var(--mono);
-		font-size: 0.72rem;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--soft);
-	}
-
-	.inquiry {
-		padding-bottom: clamp(2rem, 4vw, 3.2rem);
-	}
-
-	.inquiry-head {
-		display: grid;
-		grid-template-columns: auto 1fr;
-		gap: clamp(1.2rem, 3vw, 2.4rem);
-		align-items: start;
-		padding-top: clamp(1.8rem, 4vw, 3rem);
-	}
-
-	.inquiry-number {
-		font-family: var(--mono);
-		font-size: 0.78rem;
-		color: var(--soft);
-		padding-top: 0.5em;
-	}
-
-	.inquiry-question {
+	.column-artifacts {
 		margin: 0;
-		max-width: 22ch;
-		font-size: clamp(1.55rem, 3.4vw, 2.7rem);
-		font-weight: 300;
-		line-height: 1.06;
-		letter-spacing: -0.035em;
-	}
-
-	.inquiry-line {
-		margin: 0.8rem 0 0;
-		max-width: 62ch;
-		color: var(--muted);
-	}
-
-	.artifact-list {
-		margin: 1.6rem 0 0;
 		padding: 0;
 		list-style: none;
 	}
 
-	.artifact-list li + li {
+	.column-artifacts li + li {
 		border-top: 1px solid var(--hairline);
 	}
 
-	.artifact-row {
+	.artifact {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
-		gap: 1.5rem;
-		padding: 0.85rem 0;
+		gap: 1rem;
+		padding: 0.7rem 0;
 		transition: color 160ms ease;
 	}
 
-	.artifact-row:hover {
+	.artifact:hover {
 		color: var(--accent);
 	}
 
 	.artifact-title {
-		font-size: 1.12rem;
+		font-size: 1.06rem;
 	}
 
 	.artifact-meta {
 		font-family: var(--mono);
-		font-size: 0.7rem;
+		font-size: 0.64rem;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--soft);
 		white-space: nowrap;
 	}
 
-	.inquiry-threads {
-		margin-top: 1.4rem;
+	.column-open {
+		margin-top: auto;
+		padding-top: 1.2rem;
+		border-top: 1px solid var(--hairline);
 	}
 
-	.inquiry-threads ul {
-		margin: 0.7rem 0 0;
+	.open-kicker {
+		margin: 0;
+		font-family: var(--mono);
+		font-size: 0.62rem;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--soft);
+	}
+
+	.column-open ul {
+		margin: 0.6rem 0 0;
 		padding: 0;
 		list-style: none;
 		color: var(--muted);
+		font-size: 0.94rem;
+		line-height: 1.4;
 	}
 
-	.inquiry-threads li::before {
+	.column-open li + li {
+		margin-top: 0.35rem;
+	}
+
+	.column-open li::before {
 		content: '— ';
 		color: var(--soft);
 	}
 
-	.colophon {
-		padding: 2rem 0 0;
+	.rail {
+		display: flex;
+		flex-direction: column;
+		gap: 1.8rem;
+		padding: clamp(1.6rem, 3vw, 2.6rem) clamp(1.2rem, 2.4vw, 2.2rem);
+		background: rgba(232, 228, 220, 0.02);
+		min-width: 0;
 	}
 
-	.colophon p {
-		margin: 1.6rem 0 0;
+	.rail-block {
+		display: grid;
+		gap: 0.55rem;
+	}
+
+	.rail-block + .rail-block {
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--hairline);
+	}
+
+	.rail-link {
+		display: grid;
+		gap: 0.25rem;
+		transition: color 160ms ease;
+	}
+
+	.rail-link:hover .rail-title {
+		color: var(--accent);
+	}
+
+	.rail-title {
+		font-size: 1.12rem;
+		letter-spacing: -0.01em;
+	}
+
+	.rail-meta {
+		font-family: var(--mono);
+		font-size: 0.64rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
 		color: var(--soft);
 	}
 
-	.colophon a {
-		color: var(--muted);
-		text-decoration: underline;
-		text-underline-offset: 3px;
+	.board-footer {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+		padding: 1.3rem clamp(18px, 3vw, 40px) 1.6rem;
+		border-top: 1px solid var(--hairline);
+		font-family: var(--mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--soft);
 	}
 
-	.colophon a:hover {
+	.board-footer a {
+		transition: color 160ms ease;
+	}
+
+	.board-footer a:hover {
 		color: var(--ink);
-	}
-
-	.nav-lock {
-		display: none;
 	}
 
 	.nav-lock {
@@ -315,7 +336,7 @@ const inquiriesWithArtifacts = inquiries.map((inquiry) => ({
 		border: 0;
 		padding: 0;
 		font: inherit;
-		color: var(--muted);
+		color: inherit;
 		letter-spacing: inherit;
 		text-transform: inherit;
 		cursor: pointer;
@@ -326,21 +347,42 @@ const inquiriesWithArtifacts = inquiries.map((inquiry) => ({
 		color: var(--ink);
 	}
 
-	@media (max-width: 880px) {
-		.latest-grid {
-			grid-template-columns: 1fr;
+	@media (max-width: 1100px) {
+		.board-body {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 
-		.latest-embed {
-			order: -1;
+		.rail {
+			grid-column: 1 / -1;
+			border-top: 1px solid var(--hairline);
+			flex-direction: row;
+			flex-wrap: wrap;
+			gap: 2rem 4rem;
+		}
+
+		.rail-block + .rail-block {
+			padding-top: 0;
+			border-top: 0;
+		}
+
+		.column:nth-child(2n) {
+			border-right: 0;
 		}
 	}
 
-	@media (max-width: 720px) {
-		.artifact-row {
+	@media (max-width: 680px) {
+		.board-body {
+			grid-template-columns: 1fr;
+		}
+
+		.column {
+			border-right: 0;
+			border-bottom: 1px solid var(--hairline);
+		}
+
+		.rail {
 			flex-direction: column;
-			gap: 0.3rem;
-			align-items: flex-start;
+			gap: 1.8rem;
 		}
 	}
 </style>
