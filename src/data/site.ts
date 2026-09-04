@@ -19,8 +19,10 @@ export type Artifact = {
 	questions: string[];
 	triggeredBy: string;
 	references: Reference[];
+	rejected?: string[];
 	contradicts?: { slug: string; label: string };
 	openQuestions: string[];
+	nextMove?: string;
 };
 
 export type Idea = {
@@ -113,10 +115,15 @@ export const artifacts: Artifact[] = [
 			{ label: 'Andy Warhol — Screen Tests', meta: 'film, 1964–66' },
 			{ label: 'Gilles Deleuze — Logic of Sensation', meta: 'book, 1981' },
 		],
+		rejected: [
+			'A Warhol-only episode — too safe, too single-artist',
+			'A taxonomy of repetition types — felt like a filing system, not an argument',
+		],
 		openQuestions: [
 			'Is repetition the subject or the method?',
 			'When does a series stop being a question?',
 		],
+		nextMove: 'The question drifts toward space — what buildings repeat without meaning to.',
 	},
 	{
 		slug: 'notes-on-motifs',
@@ -135,10 +142,14 @@ export const artifacts: Artifact[] = [
 			{ label: 'Chantal Akerman — Hotel Monterey', meta: 'film, 1972' },
 			{ label: 'Ed Ruscha — Twentysix Gasoline Stations', meta: 'book, 1963' },
 		],
+		rejected: [
+			'A definition by example, front-loaded — killed it before it read like a glossary',
+		],
 		openQuestions: [
 			'Is a motif a memory or an instruction?',
 			'Can a motif be chosen, or only noticed?',
 		],
+		nextMove: 'Sit with Hotel Monterey’s stairwell until it says why it returns.',
 	},
 	{
 		slug: 'grain-and-control',
@@ -160,10 +171,15 @@ export const artifacts: Artifact[] = [
 			{ label: 'Laura Mulvey — Death 24x a Second', meta: 'book, 2006' },
 		],
 		contradicts: { slug: 'against-polish', label: 'Against Polish' },
+		rejected: [
+			'A grain-versus-digital comparison chart — the chart won too easily',
+			'Interviewing a colorist — the conversation kept sliding into gear talk',
+		],
 		openQuestions: [
 			'Does texture still signal the handmade?',
 			'Is imperfection a value or a style?',
 		],
+		nextMove: 'Push the fake-grain thread until it meets Against Polish on its own ground.',
 	},
 	{
 		slug: 'against-polish',
@@ -184,10 +200,15 @@ export const artifacts: Artifact[] = [
 			{ label: 'Beat Happening — Black Candy', meta: 'record, 1989' },
 		],
 		contradicts: { slug: 'grain-and-control', label: 'Grain and Control' },
+		rejected: [
+			'A brutalist-buildings photo essay — the images argued louder than the words',
+			'Anything on distressed typography — the academy had gotten there first',
+		],
 		openQuestions: [
 			'Who is permitted to be rough?',
 			'Is wear a history or a finish?',
 		],
+		nextMove: 'Test the claim against sound: is distortion in music earned the same way?',
 	},
 	{
 		slug: 'on-standing-still',
@@ -207,10 +228,14 @@ export const artifacts: Artifact[] = [
 			{ label: 'Agnes Martin — writings', meta: 'lectures, 1970s' },
 			{ label: 'Giorgio Morandi — still lifes', meta: 'painting' },
 		],
+		rejected: [
+			'A montage of every painting she discarded — it turned refusal into a highlight reel',
+		],
 		openQuestions: [
 			'Where is the line between a practice and a habit?',
 			'What does refusal produce?',
 		],
+		nextMove: 'Return when the painting is finished — or when it stops being the same one.',
 	},
 ];
 
@@ -253,6 +278,10 @@ export function getInquiryArtifacts(inquiry: Inquiry): Artifact[] {
 	return inquiry.artifactSlugs
 		.map(getArtifactBySlug)
 		.filter((artifact): artifact is Artifact => Boolean(artifact));
+}
+
+export function getIdeasForQuestions(questionSlugs: string[]): Idea[] {
+	return ideas.filter((idea) => idea.questions.some((slug) => questionSlugs.includes(slug)));
 }
 
 export function getChronologicalArtifacts(): Artifact[] {

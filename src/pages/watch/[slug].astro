@@ -4,9 +4,11 @@ import Gate from '../../components/Gate.astro';
 import YouTubeEmbed from '../../components/YouTubeEmbed.astro';
 import {
 	site,
+	inquiries,
 	artifacts,
 	getArtifactBySlug,
 	type Artifact,
+	type Inquiry,
 } from '../../data/site';
 
 export function getStaticPaths() {
@@ -30,15 +32,24 @@ function formatDate(date: string) {
 	});
 }
 
-const inquiryQuestions: Record<string, string> = {
-	repetition: 'Why do artists repeat themselves?',
-	'visible-technique': 'What happens when technique becomes visible?',
-	ugliness: 'Can ugliness be beautiful?',
-};
+const stateLabel =
+	artifact.state === 'rough' ? 'rough cut' : artifact.state === 'idea' ? 'seed' : artifact.state;
 
-const questionTitles = artifact.questions
-	.map((slug) => inquiryQuestions[slug])
-	.filter(Boolean);
+const inquiryList = artifact.questions
+	.map((slug) => inquiries.find((inquiry) => inquiry.slug === slug))
+	.filter((inquiry): inquiry is Inquiry => Boolean(inquiry));
+
+const siblingMap = new Map<string, Artifact>();
+for (const inquiry of inquiryList) {
+	for (const slug of inquiry.artifactSlugs) {
+		if (slug === artifact.slug) continue;
+		const sibling = getArtifactBySlug(slug);
+		if (sibling) siblingMap.set(slug, sibling);
+	}
+}
+const siblings = [...siblingMap.values()];
+
+const openThreads = [...new Set(inquiryList.flatMap((inquiry) => inquiry.openThreads))];
 
 const contradicts = artifact.contradicts
 	? getArtifactBySlug(artifact.contradicts.slug)
@@ -48,225 +59,529 @@ const contradicts = artifact.contradicts
 <Layout title={`${artifact.title} — ${site.name}`} description={artifact.summary}>
 	<Gate email={site.email} />
 
-	<header class="site-header shell">
-		<a href="/" class="wordmark">Regal State <em>/ TV</em></a>
-		<nav class="site-nav" aria-label="Primary">
-			<a href="/">Questions</a>
-			<a href="/archive">Archive</a>
-		</nav>
-	</header>
+	<div class="console">
+		<header class="console-head">
+			<a href="/" class="wordmark">Regal State <em>/ TV</em></a>
+			<nav class="site-nav" aria-label="Primary">
+				<a href="/">Questions</a>
+				<a href="/archive">Archive</a>
+				<button class="nav-lock" type="button" id="lock-button">Lock</button>
+			</nav>
+		</header>
 
-	<main class="shell">
-		<article>
-			<header class="work-head">
-				<p class="kicker">
-					{artifact.kind} · {formatDate(artifact.date)} · {artifact.duration}
-				</p>
-				<h1>{artifact.title}</h1>
-				<p class="work-summary">{artifact.summary}</p>
-				{
-					questionTitles.length > 0 && (
-						<p class="work-questions">
-							Part of{' '}
-							{questionTitles.map((q, i) => (
-								<>
-									{i > 0 && ' and '}
-									<span class="q">{q}</span>
-								</>
-							))}
-							.
-						</p>
-					)
-				}
-			</header>
+		<div class="console-body">
+			<section class="zone zone-inquire" aria-label="The question">
+				<p class="zone-tag">01 — Inquire</p>
 
-			{
-				artifact.youtubeId && (
-					<section class="work-embed">
-						<YouTubeEmbed id={artifact.youtubeId} title={artifact.title} />
-					</section>
-				)
-			}
+				<div class="zone-scroll">
+					{
+						inquiryList.length > 0 && (
+							<h1 class="q-stack">
+								{inquiryList.map((inquiry) => (
+									<a class="q-link" href={`/#q-${inquiry.slug}`}>{inquiry.question}</a>
+								))}
+							</h1>
+						)
+					}
 
-			<section class="work-journey">
-				<div class="journey-block">
-					<p class="kicker">What triggered this</p>
-					<p class="journey-copy">{artifact.triggeredBy}</p>
+					{inquiryList[0] && <p class="inquiry-line">{inquiryList[0].line}</p>}
+
+					{
+						siblings.length > 0 && (
+							<>
+								<p class="rail-kicker kicker">Also on this question</p>
+								<ul class="sibling-list">
+									{siblings.map((sibling) => (
+										<li>
+											<a class="sibling" href={`/watch/${sibling.slug}`}>
+												<span>{sibling.title}</span>
+												<span class="sibling-meta">{sibling.duration}</span>
+											</a>
+										</li>
+									))}
+								</ul>
+							</>
+						)
+					}
+
+					{
+						openThreads.length > 0 && (
+							<>
+								<p class="rail-kicker kicker">Still open</p>
+								<ul class="thread-list">
+									{openThreads.map((thread) => (
+										<li>{thread}</li>
+									))}
+								</ul>
+							</>
+						)
+					}
+				</div>
+			</section>
+
+			<section class="zone zone-express" aria-label="The artifact">
+				<p class="zone-tag zone-tag-express">03 — Express</p>
+
+				<div class="express-stack">
+					<p class="work-meta">
+						{stateLabel} · {artifact.kind} · {artifact.duration} · {formatDate(artifact.date)}
+					</p>
+					<h2 class="express-title">{artifact.title}</h2>
+					<p class="express-summary">{artifact.summary}</p>
+
+					{artifact.youtubeId ? (
+						<div class="work-embed">
+							<YouTubeEmbed id={artifact.youtubeId} title={artifact.title} />
+						</div>
+					) : (
+						<div
+							class="work-panel"
+							style={`--texture: url('/textures-lowres/${artifact.texture}.webp')`}
+						>
+							<span class="work-panel-note">a reading — no screen</span>
+						</div>
+					)}
+				</div>
+			</section>
+
+			<section class="zone zone-construct" aria-label="How it was made">
+				<p class="zone-tag">02 — Construct</p>
+
+				<div class="zone-scroll">
+					<div class="block">
+					<p class="kicker">Triggered by</p>
+					<p class="triggered-copy">{artifact.triggeredBy}</p>
 				</div>
 
-				<div class="journey-block">
-					<p class="kicker">References in conversation</p>
-					<ul class="reference-list">
-						{
-							artifact.references.map((reference) => (
-								<li>
-									<span class="reference-label">{reference.label}</span>
-									<span class="reference-meta">{reference.meta}</span>
-								</li>
-							))
-						}
-					</ul>
-				</div>
-
 				{
-					contradicts && (
-						<div class="journey-block">
-							<p class="kicker">In argument with</p>
-							<a class="contradiction" href={`/watch/${contradicts.slug}`}>
-								{contradicts.title} <span aria-hidden="true">→</span>
-							</a>
+					artifact.references.length > 0 && (
+						<div class="block">
+							<p class="kicker">References in conversation</p>
+							<ul class="ref-list">
+								{artifact.references.map((reference) => (
+									<li>
+										<span>{reference.label}</span>
+										<span class="ref-meta">{reference.meta}</span>
+									</li>
+								))}
+							</ul>
 						</div>
 					)
 				}
 
-				<div class="journey-block">
-					<p class="kicker">Unresolved</p>
-					<ul class="open-list">
-						{artifact.openQuestions.map((question) => (
-							<li>{question}</li>
-						))}
-					</ul>
+				{
+					artifact.rejected && artifact.rejected.length > 0 && (
+						<div class="block">
+							<p class="kicker">Considered, rejected</p>
+							<ul class="rejected-list">
+								{artifact.rejected.map((line) => (
+									<li>{line}</li>
+								))}
+							</ul>
+						</div>
+					)
+				}
+
+				{
+					contradicts && (
+						<div class="block">
+							<p class="kicker">In argument with</p>
+							<a class="contradiction-link" href={`/watch/${contradicts.slug}`}>
+								{contradicts.title} <span aria-hidden="true">→</span>
+							</a>
+							<p class="contradiction-copy">{contradicts.summary}</p>
+						</div>
+					)
+				}
 				</div>
 			</section>
-		</article>
-
-		<nav class="work-next" aria-label="More artifacts">
-			<a href="/archive">← Everything in the archive</a>
-		</nav>
-	</main>
-
-	<footer class="site-footer shell">
-		<a href={`mailto:${site.email}`}>{site.email}</a>
-		<span>
-			<a href={site.instagram} target="_blank" rel="noreferrer">Instagram</a>
-			{' / '}
-			<a href={site.youtube} target="_blank" rel="noreferrer">YouTube</a>
-		</span>
-	</footer>
+		</div>
+	</div>
 </Layout>
 
+<script>
+	document.getElementById('lock-button')?.addEventListener('click', () => {
+		window.dispatchEvent(new CustomEvent('gate:request'));
+	});
+</script>
+
 <style>
-	.work-head {
-		padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(1.6rem, 3vw, 2.5rem);
-	}
-
-	.work-head h1 {
-		margin: 1.2rem 0 0;
-		max-width: 18ch;
-		font-size: clamp(2.2rem, 5.4vw, 4rem);
-		font-weight: 300;
-		line-height: 1.02;
-		letter-spacing: -0.04em;
-	}
-
-	.work-summary {
-		margin: 1.2rem 0 0;
-		max-width: 58ch;
-		font-size: clamp(1.02rem, 1.6vw, 1.18rem);
-		color: var(--muted);
-	}
-
-	.work-questions {
-		margin: 1.1rem 0 0;
-		color: var(--soft);
-		font-size: 0.95rem;
-	}
-
-	.work-questions .q {
-		color: var(--muted);
-		font-style: italic;
-	}
-
-	.work-embed {
-		margin: clamp(1.5rem, 3vw, 2.5rem) 0 0;
-	}
-
-	.work-journey {
+	.console {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: clamp(2rem, 4vw, 3.5rem);
-		margin-top: clamp(2.5rem, 5vw, 4rem);
-		padding-top: clamp(1.8rem, 4vw, 2.8rem);
-		border-top: 1px solid var(--hairline);
+		grid-template-rows: auto 1fr;
+		height: 100vh;
+		height: 100svh;
+		min-height: 37.5rem;
 	}
 
-	.journey-block .kicker {
-		margin-bottom: 0.9rem;
+	.console-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 1.1rem clamp(18px, 3vw, 40px);
+		border-bottom: 1px solid var(--hairline);
 	}
 
-	.journey-copy {
+	.console-body {
+		display: grid;
+		grid-template-columns: minmax(12rem, 0.58fr) minmax(0, 2.95fr) minmax(13.5rem, 0.74fr);
+		grid-template-rows: 1fr;
+		grid-template-areas: 'inquire express construct';
+		min-height: 0;
+	}
+
+	.zone {
+		min-height: 0;
+		padding: clamp(1.2rem, 2.4vw, 2.1rem);
+	}
+
+	.zone-inquire {
+		grid-area: inquire;
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr);
+		min-width: 0;
+	}
+
+	.zone-express {
+		grid-area: express;
+		position: relative;
+		display: grid;
+		grid-template-rows: minmax(0, 1fr);
+		text-align: center;
+		overflow: hidden;
+	}
+
+	.zone-construct {
+		grid-area: construct;
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr);
+		min-width: 0;
+	}
+
+	.zone-scroll {
+		min-height: 0;
+		overflow-y: auto;
+		scrollbar-width: thin;
+		scrollbar-color: var(--hairline) transparent;
+	}
+
+	.zone-tag {
+		margin: 0 0 1.2rem;
+		font-family: var(--mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--soft);
+	}
+
+	.zone-tag-express {
+		position: absolute;
+		top: clamp(1.2rem, 2.4vw, 2.1rem);
+		left: clamp(1.2rem, 2.4vw, 2.1rem);
+	}
+
+	.q-stack {
 		margin: 0;
-		max-width: 46ch;
-		color: var(--muted);
+		display: grid;
+		gap: 0.4rem;
+		font-size: clamp(1.45rem, 2.1vw, 2rem);
+		font-weight: 400;
+		line-height: 1.12;
+		letter-spacing: -0.02em;
 	}
 
-	.reference-list,
-	.open-list {
+	.q-link {
+		font-style: italic;
+		transition: color 160ms ease;
+	}
+
+	.q-link:hover {
+		color: var(--accent);
+	}
+
+	.inquiry-line {
+		margin: 1rem 0 0;
+		color: var(--muted);
+		font-size: 0.98rem;
+		line-height: 1.5;
+	}
+
+	.rail-kicker {
+		margin: 1.7rem 0 0.6rem;
+	}
+
+	.sibling-list,
+	.ref-list {
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
-	.reference-list li {
+	.sibling-list li + li,
+	.ref-list li + li {
+		border-top: 1px solid var(--hairline);
+	}
+
+	.sibling {
 		display: flex;
 		justify-content: space-between;
 		align-items: baseline;
 		gap: 1rem;
 		padding: 0.55rem 0;
-		border-bottom: 1px solid var(--hairline);
+		font-size: 1rem;
+		transition: color 160ms ease;
 	}
 
-	.reference-meta {
+	.sibling:hover {
+		color: var(--accent);
+	}
+
+	.sibling-meta {
 		font-family: var(--mono);
-		font-size: 0.68rem;
-		letter-spacing: 0.1em;
+		font-size: 0.64rem;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--soft);
 		white-space: nowrap;
 	}
 
-	.contradiction {
-		display: inline-flex;
-		gap: 0.5rem;
-		font-size: 1.15rem;
-		font-style: italic;
-		transition: color 160ms ease;
-	}
-
-	.contradiction:hover {
-		color: var(--accent);
-	}
-
-	.open-list li {
-		padding: 0.45rem 0;
+	.thread-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
 		color: var(--muted);
+		font-size: 0.98rem;
+		line-height: 1.5;
 	}
 
-	.open-list li::before {
+	.thread-list li {
+		padding: 0.3rem 0;
+	}
+
+	.thread-list li::before {
 		content: '— ';
 		color: var(--soft);
 	}
 
-	.work-next {
-		margin-top: clamp(3rem, 6vw, 5rem);
+	.block {
+		margin-top: 2.4rem;
 	}
 
-	.work-next a {
+	.block:first-of-type {
+		margin-top: 0;
+	}
+
+	.block .kicker {
+		margin-bottom: 0.65rem;
+	}
+
+	.triggered-copy {
+		margin: 0;
+		color: var(--muted);
+		font-size: 1.1rem;
+		line-height: 1.55;
+	}
+
+	.ref-list li {
+		display: grid;
+		gap: 0.3rem;
+		padding: 0.55rem 0;
+		font-size: 1.02rem;
+	}
+
+	.ref-meta {
 		font-family: var(--mono);
-		font-size: 0.74rem;
-		letter-spacing: 0.16em;
+		font-size: 0.64rem;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--soft);
+	}
+
+	.rejected-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		color: var(--muted);
+		font-style: italic;
+		font-size: 0.95rem;
+		line-height: 1.5;
+	}
+
+	.rejected-list li {
+		padding: 0.35rem 0;
+	}
+
+	.rejected-list li::before {
+		content: '× ';
+	}
+
+	.contradiction-link {
+		display: inline-flex;
+		gap: 0.5rem;
+		font-size: 1.08rem;
+		font-style: italic;
 		transition: color 160ms ease;
 	}
 
-	.work-next a:hover {
+	.contradiction-link:hover {
+		color: var(--accent);
+	}
+
+	.contradiction-copy {
+		margin: 0.5rem 0 0;
+		color: var(--muted);
+		font-size: 0.95rem;
+		line-height: 1.5;
+	}
+
+	.express-stack {
+		display: grid;
+		grid-template-rows: auto auto auto minmax(0, 1fr);
+		justify-items: center;
+		gap: clamp(0.8rem, 1.5vw, 1.3rem);
+		padding: clamp(2.2rem, 4vh, 3rem) clamp(1rem, 2vw, 2rem) clamp(1.4rem, 3vh, 2.2rem);
+		width: 100%;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.work-meta {
+		margin: 0;
+		font-family: var(--mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--accent);
+	}
+
+	.express-title {
+		margin: 0;
+		max-width: 24ch;
+		font-size: clamp(2.4rem, 4.2vw, 4rem);
+		font-weight: 300;
+		line-height: 1.02;
+		letter-spacing: -0.03em;
+	}
+
+	.express-summary {
+		margin: 0;
+		max-width: 54ch;
+		color: var(--muted);
+		font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+		line-height: 1.55;
+	}
+
+	.work-embed {
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+		display: flex;
+		justify-content: center;
+	}
+
+	.work-embed :global(.embed) {
+		width: auto;
+		height: 100%;
+		max-width: 100%;
+	}
+
+	.work-panel {
+		height: 100%;
+		width: auto;
+		max-width: 100%;
+		aspect-ratio: 16 / 9;
+		display: grid;
+		place-items: center;
+		border: 1px solid var(--hairline);
+		background:
+			linear-gradient(180deg, rgba(12, 12, 12, 0.1), rgba(12, 12, 12, 0.42)),
+			var(--texture, #161616) center / cover no-repeat;
+		filter: grayscale(0.5) contrast(1.02);
+	}
+
+	.work-panel-note {
+		padding: 0.55rem 0.95rem;
+		border: 1px solid var(--hairline);
+		background: rgba(12, 12, 12, 0.72);
+		font-family: var(--mono);
+		font-size: 0.66rem;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.nav-lock {
+		display: inline;
+	}
+
+	#lock-button {
+		background: none;
+		border: 0;
+		padding: 0;
+		font: inherit;
+		color: inherit;
+		letter-spacing: inherit;
+		text-transform: inherit;
+		cursor: pointer;
+		transition: color 160ms ease;
+	}
+
+	#lock-button:hover {
 		color: var(--ink);
 	}
 
-	@media (max-width: 720px) {
-		.work-journey {
-			grid-template-columns: 1fr;
+	@media (max-width: 959px) {
+		.console {
+			height: auto;
+			min-height: 100svh;
+		}
+
+		.console-body {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.zone-inquire,
+		.zone-construct {
+			display: block;
+			overflow: visible;
+		}
+
+		.zone-scroll {
+			overflow: visible;
+		}
+
+		.zone-express {
+			overflow: visible;
+			padding-top: clamp(2.4rem, 6vw, 3.5rem);
+			padding-bottom: clamp(2.4rem, 6vw, 3.5rem);
+			border-bottom: 1px solid var(--hairline);
+		}
+
+		.work-embed {
+			display: block;
+			height: auto;
+		}
+
+		.work-embed :global(.embed) {
+			width: 100%;
+			height: auto;
+			aspect-ratio: 16 / 9;
+		}
+
+		.work-panel {
+			width: 100%;
+			height: auto;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.q-link,
+		.sibling,
+		.contradiction-link,
+		#lock-button {
+			transition: none;
 		}
 	}
 </style>
