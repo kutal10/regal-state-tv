@@ -80,7 +80,16 @@ const hasNotes =
 
 		<main class="stage" data-artifact={artifact.slug}>
 			<div class="stage-head">
-				<h1 class="work-title">{artifact.title}</h1>
+				<div class="title-row">
+					<h1 class="work-title">{artifact.title}</h1>
+					<button class="seen-toggle mono" type="button" id="seen-toggle" aria-pressed="false">
+						<svg class="seen-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+							<circle class="seen-ring" cx="8" cy="8" r="6.6" />
+							<path d="M5.1 8.3 7.1 10.3 11 6.2" />
+						</svg>
+						Seen
+					</button>
+				</div>
 				<p class="work-meta mono">
 					{stateLabel} · {artifact.duration} · {formatDate(artifact.date)}
 				</p>
@@ -110,9 +119,6 @@ const hasNotes =
 							<a href={`/watch/${contradicts.slug}`}>{contradicts.title} →</a>
 						</p>
 					)}
-					<button class="seen-toggle mono" type="button" id="seen-toggle" aria-pressed="false">
-						Seen
-					</button>
 					{hasNotes && (
 						<button class="notes-toggle mono" type="button" id="notes-toggle" aria-expanded="false">
 							Notes
@@ -356,8 +362,7 @@ const hasNotes =
 	}
 
 	.notes-toggle,
-	.notes-close,
-	.seen-toggle {
+	.notes-close {
 		background: none;
 		border: 0;
 		padding: 0;
@@ -370,19 +375,74 @@ const hasNotes =
 	}
 
 	.notes-toggle:hover,
-	.notes-close:hover,
-	.seen-toggle:hover {
+	.notes-close:hover {
 		color: var(--ink);
 	}
 
+	.title-row {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: clamp(0.7rem, 1.4vw, 1.1rem);
+		flex-wrap: wrap;
+	}
+
 	.seen-toggle {
-		min-width: 4.2rem;
-		text-align: center;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		flex: none;
+		padding: 0.55rem 1.05rem;
+		border: 1px solid var(--hairline-strong);
+		border-radius: 999px;
+		background: rgba(10, 8, 7, 0.4);
+		color: var(--muted);
+		font-size: 0.78rem;
+		cursor: pointer;
+		transition:
+			color 160ms ease,
+			border-color 160ms ease,
+			background-color 160ms ease;
+	}
+
+	.seen-icon {
+		width: 1.05rem;
+		height: 1.05rem;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.3;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	.seen-icon path {
+		opacity: 0;
+		transition: opacity 160ms ease;
+	}
+
+	.seen-ring {
+		stroke-dasharray: 2.4 2.6;
+		stroke-dashoffset: 0;
+		transition: stroke-dashoffset 320ms ease;
+	}
+
+	.seen-toggle:hover .seen-ring {
+		stroke-dashoffset: -5;
+	}
+
+	.seen-toggle:hover {
+		color: var(--ink);
+		border-color: var(--ink);
 	}
 
 	.seen-toggle[aria-pressed='true'] {
-		color: var(--accent-ink);
-		border-bottom: 1px solid var(--accent-ink);
+		color: var(--green);
+		border-color: rgba(125, 186, 133, 0.6);
+		background: rgba(125, 186, 133, 0.13);
+	}
+
+	.seen-toggle[aria-pressed='true'] .seen-icon path {
+		opacity: 1;
 	}
 
 	.notes {
