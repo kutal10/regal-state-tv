@@ -2,10 +2,14 @@
 interface Props {
 	title: string;
 	description?: string;
+	ungated?: boolean;
 }
 
-const { title, description = 'A curated body of questions, investigations, and documentaries by Regal State.' } =
-	Astro.props;
+const {
+	title,
+	description = 'A curated body of questions, investigations, and documentaries by Regal State.',
+	ungated = false,
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -19,14 +23,16 @@ const { title, description = 'A curated body of questions, investigations, and d
 		<meta name="description" content={description} />
 		<meta name="theme-color" content="#0e0b09" />
 		<title>{title}</title>
-		<script is:inline>
+		<script is:inline define:vars={{ ungated }}>
 			(() => {
-				try {
-					if (localStorage.getItem('rs_unlocked') !== 'yes') {
+				if (!ungated) {
+					try {
+						if (localStorage.getItem('rs_unlocked') !== 'yes') {
+							document.documentElement.setAttribute('data-locked', '');
+						}
+					} catch {
 						document.documentElement.setAttribute('data-locked', '');
 					}
-				} catch {
-					document.documentElement.setAttribute('data-locked', '');
 				}
 
 				try {
@@ -54,7 +60,7 @@ const { title, description = 'A curated body of questions, investigations, and d
 </html>
 
 <style is:global>
-	@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap');
+	@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap');
 
 	:root {
 		--bg: #0e0b09;

@@ -1,19 +1,20 @@
 ---
 interface Props {
-	current?: 'everything' | 'questions' | 'archive' | 'watch';
+	current?: 'home' | 'map' | 'archive' | 'watch' | 'pricing';
 }
 
 const { current } = Astro.props;
 
 const links = [
-	{ id: 'everything', href: '/', label: 'Everything' },
-	{ id: 'questions', href: '/questions', label: 'Questions' },
+	{ id: 'home', href: '/home', label: 'Home' },
+	{ id: 'map', href: '/map', label: 'Map' },
 	{ id: 'archive', href: '/archive', label: 'Archive' },
+	{ id: 'pricing', href: '/pricing', label: 'Pricing' },
 ] as const;
 ---
 
 <header class="site-header">
-	<a class="brand" href="/" aria-label="Regal State home">
+	<a class="brand" href="/home" aria-label="Regal State home">
 		<img src="/LOGO_1.svg" alt="Regal State" />
 	</a>
 

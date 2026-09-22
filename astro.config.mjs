@@ -6,4 +6,7 @@ import react from '@astrojs/react';
 export default defineConfig({
 	integrations: [react()],
 	site: 'https://regalstate.tv',
+	redirects: {
+		'/': '/home',
+	},
 });

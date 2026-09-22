@@ -1,0 +1,92 @@
+---
+import type { Testimonial } from '../data/testimonials';
+
+interface Props {
+	testimonial: Testimonial;
+}
+
+const { testimonial } = Astro.props;
+---
+
+<figure
+	class="quote-card"
+	style={`--texture: url('/textures-lowres/${testimonial.texture}.webp')`}
+>
+	<figcaption class="quote-head">
+		<span class="quote-avatar" aria-hidden="true"></span>
+		<span class="quote-identity">
+			<span class="quote-name">{testimonial.name}</span>
+			<span class="quote-handle">{testimonial.handle}</span>
+		</span>
+	</figcaption>
+	<blockquote class="quote-body">
+		<p>{testimonial.quote}</p>
+	</blockquote>
+</figure>
+
+<style>
+	.quote-card {
+		display: grid;
+		align-content: start;
+		gap: 0.85rem;
+		width: min(22rem, 82vw);
+		height: 100%;
+		min-height: 13rem;
+		margin: 0;
+		padding: 1.05rem 1.15rem 1.2rem;
+		border: 1px solid rgba(235, 228, 216, 0.14);
+		border-radius: 10px;
+		background: #171310;
+	}
+
+	.quote-head {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+	}
+
+	.quote-avatar {
+		flex: none;
+		width: 2.25rem;
+		height: 2.25rem;
+		border-radius: 50%;
+		background-image: var(--texture);
+		background-position: center;
+		background-size: cover;
+		filter: saturate(0.72) contrast(0.95);
+	}
+
+	.quote-identity {
+		display: grid;
+		gap: 0.1rem;
+		min-width: 0;
+	}
+
+	.quote-name {
+		font-size: 1.02rem;
+		line-height: 1.1;
+		letter-spacing: -0.01em;
+		color: var(--ink);
+	}
+
+	.quote-handle {
+		font-family: var(--mono);
+		font-size: 0.66rem;
+		letter-spacing: 0.06em;
+		color: var(--soft);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.quote-body {
+		margin: 0;
+	}
+
+	.quote-body p {
+		margin: 0;
+		font-size: 0.98rem;
+		line-height: 1.42;
+		color: var(--muted);
+	}
+</style>

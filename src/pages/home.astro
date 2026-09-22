@@ -1,0 +1,190 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import QuoteMarquee from '../components/QuoteMarquee.astro';
+import { site } from '../data/site';
+---
+
+<Layout
+	title={`Human Documentaries — ${site.name}`}
+	description="Human Documentaries. No algorithms."
+	ungated
+>
+	<div class="home">
+		<SiteHeader current="home" />
+
+		<main class="home-main">
+			<header class="hero">
+				<h1 class="hero-title">Human Documentaries</h1>
+				<p class="hero-sub">No Algorithms</p>
+
+				<div class="members">
+					<div class="avatars" aria-hidden="true">
+						{
+							[3, 8, 14, 19, 25].map((texture) => (
+								<img src={`/textures-lowres/${texture}.webp`} alt="" loading="lazy" />
+							))
+						}
+					</div>
+					<p class="members-label mono">
+						Join <span class="members-count">231</span> Members
+					</p>
+				</div>
+			</header>
+
+			<QuoteMarquee />
+
+			<div class="home-cta">
+				<a class="mono explore-link" href="/pricing">Explore Access Tiers</a>
+			</div>
+		</main>
+
+		<SiteFooter email={site.email} instagram={site.instagram} youtube={site.youtube} />
+	</div>
+</Layout>
+
+<style>
+	.home {
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		min-height: 100svh;
+	}
+
+	.home-main {
+		display: grid;
+		align-content: center;
+		gap: clamp(2.6rem, 6vh, 5rem);
+		min-height: 0;
+		padding-bottom: clamp(1rem, 3vh, 2.4rem);
+	}
+
+	.hero {
+		display: grid;
+		justify-items: center;
+		gap: 0.7rem;
+		padding: 0 clamp(16px, 3vw, 40px);
+		text-align: center;
+	}
+
+	.hero-title {
+		margin: 0;
+		font-size: clamp(2.4rem, 7vw, 5.4rem);
+		font-weight: 300;
+		line-height: 1;
+		letter-spacing: -0.03em;
+		text-wrap: balance;
+	}
+
+	.hero-sub {
+		margin: 0;
+		font-family: var(--mono);
+		font-size: clamp(0.68rem, 1vw, 0.82rem);
+		letter-spacing: 0.34em;
+		text-transform: uppercase;
+		color: var(--accent);
+	}
+
+	.members {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		margin-top: 0.9rem;
+	}
+
+	.avatars {
+		display: flex;
+		align-items: center;
+	}
+
+	.avatars img {
+		width: clamp(24px, 2.4vw, 30px);
+		height: clamp(24px, 2.4vw, 30px);
+		border-radius: 50%;
+		border: 1px solid rgba(235, 228, 216, 0.28);
+		background: #1a1512 center / cover no-repeat;
+		object-fit: cover;
+		filter: saturate(0.7);
+		box-shadow: 0 0 0 2px var(--bg);
+	}
+
+	.avatars img + img {
+		margin-left: -0.7rem;
+	}
+
+	.members-label {
+		margin: 0;
+		color: #fff;
+		font-weight: 700;
+		font-size: 0.76rem;
+		letter-spacing: 0.16em;
+	}
+
+	.members-count {
+		display: inline-block;
+		font-size: 1.42em;
+		font-weight: 700;
+		line-height: 0;
+		vertical-align: -0.06em;
+		letter-spacing: 0.04em;
+		color: var(--accent-ink);
+	}
+
+	.home-cta {
+		display: grid;
+		justify-items: center;
+		margin-top: clamp(-2rem, -3vh, -1rem);
+		padding: 0 clamp(16px, 3vw, 40px);
+	}
+
+	.explore-link {
+		position: relative;
+		padding: 0.95rem 1.9rem;
+		border: 1px solid var(--accent);
+		color: var(--accent-ink);
+		background: rgba(207, 116, 64, 0.1);
+		box-shadow:
+			0 0 0 1px rgba(207, 116, 64, 0.12),
+			0 0 18px rgba(207, 116, 64, 0.22),
+			0 0 46px rgba(207, 116, 64, 0.14);
+		animation: explore-pulse 3.2s ease-in-out infinite;
+		transition:
+			background-color 180ms ease,
+			border-color 180ms ease,
+			color 180ms ease,
+			box-shadow 180ms ease,
+			transform 180ms ease;
+	}
+
+	.explore-link:hover,
+	.explore-link:focus-visible {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: var(--bg);
+		transform: translateY(-1px);
+		box-shadow:
+			0 0 22px rgba(207, 116, 64, 0.5),
+			0 0 60px rgba(207, 116, 64, 0.3);
+	}
+
+	.explore-link:focus-visible {
+		outline: 2px solid var(--accent-ink);
+		outline-offset: 3px;
+	}
+
+	@keyframes explore-pulse {
+		0%,
+		100% {
+			box-shadow:
+				0 0 0 1px rgba(207, 116, 64, 0.12),
+				0 0 18px rgba(207, 116, 64, 0.22),
+				0 0 46px rgba(207, 116, 64, 0.14);
+		}
+		50% {
+			box-shadow:
+				0 0 0 1px rgba(207, 116, 64, 0.2),
+				0 0 26px rgba(207, 116, 64, 0.38),
+				0 0 64px rgba(207, 116, 64, 0.22);
+		}
+	}
+</style>
