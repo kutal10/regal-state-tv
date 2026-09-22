@@ -1,9 +1,10 @@
-export type ProgressTier = 'visited' | 'played' | 'seen';
+export type ProgressTier = 'visited' | 'played' | 'seen' | 'saved';
 
 export type Progress = {
 	visited: string[];
 	played: string[];
 	seen: string[];
+	saved: string[];
 };
 
 export const PROGRESS_KEY = 'rs_progress';
@@ -13,9 +14,10 @@ export type ProgressSnapshot = {
 	visited: string[];
 	played: string[];
 	seen: string[];
+	saved: string[];
 };
 
-const EMPTY: Progress = { visited: [], played: [], seen: [] };
+const EMPTY: Progress = { visited: [], played: [], seen: [], saved: [] };
 
 function unique(...lists: string[][]): string[] {
 	return [...new Set(lists.flat())];
@@ -28,7 +30,12 @@ function normalize(value: unknown): Progress {
 		Array.isArray(record[key])
 			? (record[key] as unknown[]).filter((slug): slug is string => typeof slug === 'string')
 			: [];
-	return { visited: list('visited'), played: list('played'), seen: list('seen') };
+	return {
+		visited: list('visited'),
+		played: list('played'),
+		seen: list('seen'),
+		saved: unique(list('saved')),
+	};
 }
 
 export function loadProgress(): Progress {
@@ -45,6 +52,7 @@ export function snapshot(progress: Progress): ProgressSnapshot {
 		seen: progress.seen,
 		played: unique(progress.played, progress.seen),
 		visited: unique(progress.visited, progress.played, progress.seen),
+		saved: progress.saved,
 	};
 }
 
@@ -56,6 +64,7 @@ export function applyProgressAttributes(
 	root.dataset.visited = current.visited.join(' ');
 	root.dataset.played = current.played.join(' ');
 	root.dataset.seen = current.seen.join(' ');
+	root.dataset.saved = current.saved.join(' ');
 }
 
 function save(progress: Progress) {

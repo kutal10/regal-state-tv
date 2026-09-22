@@ -95,5 +95,5 @@ export function layout(progress: Progress): Map<string, PackedCircle> {
 }
 
 export function restingLayout(): Map<string, PackedCircle> {
-	return layout({ visited: [], played: [], seen: [] });
+	return layout({ visited: [], played: [], seen: [], saved: [] });
 }

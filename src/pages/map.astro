@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import Gate from '../components/Gate.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import BubbleField from '../components/BubbleField.astro';
+import VideoUniverse from '../components/VideoUniverse.astro';
 import { site } from '../data/site';
 ---
 
@@ -13,7 +13,7 @@ import { site } from '../data/site';
 	<div class="page">
 		<SiteHeader current="map" />
 		<main class="field-stage">
-			<BubbleField />
+			<VideoUniverse />
 		</main>
 		<SiteFooter email={site.email} instagram={site.instagram} youtube={site.youtube} />
 	</div>
