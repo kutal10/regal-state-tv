@@ -1,8 +1,12 @@
 ---
-import { getUniverseZones } from '../lib/universe';
+import { getUniverseZones, isPlayableVideo } from '../lib/universe';
 
 const initialZones = getUniverseZones({ saved: [] });
-const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.items.filter((item) => !item.seed).length ?? 0;
+const countPlayableVideos = (items: (typeof initialZones)[number]['items']) =>
+	items.filter(isPlayableVideo).length;
+const videoCountLabel = (count: number) =>
+	count === 0 ? 'No videos yet' : `${count} ${count === 1 ? 'video' : 'videos'}`;
+const initialItemCount = countPlayableVideos(initialZones.find((zone) => zone.id === 'culture')?.items ?? []);
 ---
 
 <section class="universe-section" aria-labelledby="universe-heading">
@@ -30,27 +34,36 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		<div class="map-scene" data-map-scene>
 			<div class="map-nodes" data-map-nodes>
 				{
-					initialZones.map((zone) => (
-						<div
-							class:list={['map-node-wrap', 'zone-wrap', `size-${zone.size}`]}
-							data-node-id={zone.id}
-							data-node-type="zone"
-							data-zone={zone.id}
-							style={`--x:${zone.position.x}%;--y:${zone.position.y}%`}
-						>
-							<button class="map-node zone-node" type="button" aria-label={`${zone.title}, ${zone.items.length} pieces`}>
-								<span class="node-mosaic" aria-hidden="true">
-									{zone.items.slice(0, 5).map((item) => (
-										<span style={`--texture:url('/textures-lowres/${item.texture}.webp')`} />
-									))}
-								</span>
-								<span class="node-copy">
-									<span class="node-title">{zone.title}</span>
-									<span class="node-count mono">{zone.items.length ? `${zone.items.length} pieces` : '0 pieces'}</span>
-								</span>
-							</button>
-						</div>
-					))
+					initialZones.map((zone) => {
+						const videoCount = countPlayableVideos(zone.items);
+						return (
+							<div
+								class:list={['map-node-wrap', 'zone-wrap', `size-${zone.size}`]}
+								data-node-id={zone.id}
+								data-node-type="zone"
+								data-zone={zone.id}
+								data-empty={videoCount === 0 ? 'true' : undefined}
+								style={`--x:${zone.position.x}%;--y:${zone.position.y}%`}
+							>
+								<button
+									class="map-node zone-node"
+									type="button"
+									disabled={videoCount === 0}
+									aria-label={`${zone.title}, ${videoCountLabel(videoCount)}`}
+								>
+									<span class="node-mosaic" aria-hidden="true">
+										{zone.items.slice(0, 5).map((item) => (
+											<span style={`--texture:url('/textures-lowres/${item.texture}.webp')`} />
+										))}
+									</span>
+									<span class="node-copy">
+										<span class="node-title">{zone.title}</span>
+										<span class="node-count mono">{videoCountLabel(videoCount)}</span>
+									</span>
+								</button>
+							</div>
+						);
+					})
 				}
 			</div>
 		</div>
@@ -68,7 +81,7 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 
 <script>
 	import { clearProgress, loadProgress, snapshot, toggle, PROGRESS_EVENT } from '../lib/progress';
-	import { getItemById, getUniverseZones, universeItems } from '../lib/universe';
+	import { getItemById, getUniverseZones, isPlayableVideo, universeItems } from '../lib/universe';
 	import { tierFor } from '../lib/bubbles';
 
 	type MapNode = {
@@ -81,6 +94,14 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		size?: 'large' | 'medium' | 'small';
 		item?: (typeof universeItems)[number];
 	};
+
+	function countPlayableVideos(items: typeof universeItems) {
+		return items.filter(isPlayableVideo).length;
+	}
+
+	function videoCountLabel(count: number) {
+		return count === 0 ? 'No videos yet' : `${count} ${count === 1 ? 'video' : 'videos'}`;
+	}
 
 	const nodesRoot = document.querySelector<HTMLElement>('[data-map-nodes]');
 	const scene = document.querySelector<HTMLElement>('[data-map-scene]');
@@ -247,10 +268,6 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		};
 	}
 
-	function countLabel(count: number) {
-		return `${count} ${count === 1 ? 'piece' : 'pieces'}`;
-	}
-
 	function makeMosaic(items: typeof universeItems) {
 		const mosaic = document.createElement('span');
 		mosaic.className = 'node-mosaic';
@@ -286,6 +303,8 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 	}
 
 	function makeNodeElement(node: MapNode, index: number, total: number, matched: boolean): HTMLElement {
+		const videoCount = countPlayableVideos(node.items);
+		const canOpen = node.type === 'item' || videoCount > 0;
 		const position = positionFor(node, index, total);
 		if (search && matched) {
 			position.x += (50 - position.x) * 0.16;
@@ -296,6 +315,7 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		wrapper.dataset.nodeId = node.id;
 		wrapper.dataset.nodeType = node.type;
 		wrapper.dataset.searchMatch = String(matched);
+		wrapper.dataset.empty = String(!canOpen);
 		if (node.type === 'zone') wrapper.dataset.zone = node.id;
 		wrapper.style.setProperty('--x', `${position.x}%`);
 		wrapper.style.setProperty('--y', `${position.y}%`);
@@ -313,11 +333,14 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 			nodeElement.setAttribute('aria-label', `${item.title}, ${item.duration}. Open this piece.`);
 		} else if (nodeElement instanceof HTMLButtonElement) {
 			nodeElement.type = 'button';
+			nodeElement.disabled = !canOpen;
 			nodeElement.setAttribute(
 				'aria-label',
 				item?.seed
 					? `${item.title}, idea seed. Show details.`
-					: `${node.title}, ${node.items.length ? countLabel(node.items.length) : 'no pieces yet'}. Enter.`,
+					: canOpen
+						? `${node.title}, ${videoCountLabel(videoCount)}. Enter.`
+						: `${node.title}, ${videoCountLabel(videoCount)}. Unavailable.`,
 			);
 		}
 		if (item) {
@@ -325,7 +348,7 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 			nodeElement.dataset.saved = String(saved);
 			nodeElement.style.setProperty('--texture', `url('/textures-lowres/${item.texture}.webp')`);
 		} else {
-			nodeElement.dataset.count = String(node.items.length);
+			nodeElement.dataset.count = String(videoCount);
 		}
 
 		nodeElement.append(makeMosaic(item ? [item] : node.items));
@@ -337,7 +360,7 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		copy.append(title);
 		const count = document.createElement('span');
 		count.className = 'node-count mono';
-		count.textContent = item ? (item.seed ? 'seed' : item.duration) : countLabel(node.items.length);
+		count.textContent = item ? (item.seed ? 'seed' : item.duration) : videoCountLabel(videoCount);
 		copy.append(count);
 		if (item?.seed) {
 			const seedMark = document.createElement('span');
@@ -357,19 +380,21 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 				seedDetail?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
 			});
 		}
-		if (node.type !== 'item') {
+		if (node.type !== 'item' && canOpen) {
 			nodeElement.addEventListener('click', () => {
 				const nextPath = node.type === 'zone' ? [node.id] : [...path, node.id];
 				flyInto(wrapper, nextPath);
 			});
 		}
 
-		wrapper.addEventListener('pointerenter', () => shiftNeighbors(wrapper));
-		wrapper.addEventListener('pointerleave', clearNeighborShifts);
-		wrapper.addEventListener('focusin', () => shiftNeighbors(wrapper));
-		wrapper.addEventListener('focusout', (event) => {
-			if (!wrapper.contains(event.relatedTarget as Node | null)) clearNeighborShifts();
-		});
+		if (canOpen) {
+			wrapper.addEventListener('pointerenter', () => shiftNeighbors(wrapper));
+			wrapper.addEventListener('pointerleave', clearNeighborShifts);
+			wrapper.addEventListener('focusin', () => shiftNeighbors(wrapper));
+			wrapper.addEventListener('focusout', (event) => {
+				if (!wrapper.contains(event.relatedTarget as Node | null)) clearNeighborShifts();
+			});
+		}
 		return wrapper;
 	}
 
@@ -378,7 +403,7 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		if (search && nodes.length > 0 && !nodes.some((node) => matchesNode(node))) {
 			return `No matches for “${searchInput?.value.trim() ?? search}”.`;
 		}
-		if (path.length === 0) return '';
+		if (nodes.length > 0 || path.length === 0) return '';
 		const zone = zones().find((entry) => entry.id === path[0]);
 		if (!zone) return '';
 		if (path.length === 1) return zone.emptyMessage;
@@ -638,19 +663,19 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		list-style: none;
 	}
 
-	.breadcrumbs li {
+	:global(.universe-section .breadcrumbs li) {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.65rem;
 	}
 
-	.breadcrumbs li + li::before {
+	:global(.universe-section .breadcrumbs li + li::before) {
 		content: '/';
 		color: rgba(235, 228, 216, 0.24);
 	}
 
-	.breadcrumbs button,
-	.breadcrumbs [aria-current='page'] {
+	:global(.universe-section .breadcrumbs button),
+	:global(.universe-section .breadcrumbs [aria-current='page']) {
 		border: 0;
 		padding: 0;
 		background: none;
@@ -662,17 +687,17 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		transition: color 180ms ease;
 	}
 
-	.breadcrumbs [aria-current='page'] {
+	:global(.universe-section .breadcrumbs [aria-current='page']) {
 		color: var(--accent-ink);
 		cursor: default;
 	}
 
-	.breadcrumbs button:hover,
-	.breadcrumbs button:focus-visible {
+	:global(.universe-section .breadcrumbs button:hover),
+	:global(.universe-section .breadcrumbs button:focus-visible) {
 		color: var(--ink);
 	}
 
-	.breadcrumbs > button {
+	:global(.universe-section .breadcrumbs > button) {
 		margin-right: 0.65rem;
 		font-size: 1.05rem;
 		letter-spacing: 0;
@@ -769,7 +794,7 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		opacity: 0.2;
 	}
 
-	.map-node-wrap {
+	:global(.universe-section .map-node-wrap) {
 		position: absolute;
 		left: var(--x);
 		top: var(--y);
@@ -778,23 +803,27 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		transition: left 520ms cubic-bezier(0.2, 0.72, 0.24, 1), top 520ms cubic-bezier(0.2, 0.72, 0.24, 1), transform 360ms cubic-bezier(0.2, 0.72, 0.24, 1), opacity 280ms ease;
 	}
 
-	.map-node-wrap[data-nearby='true'] {
+	:global(.universe-section .map-node-wrap[data-nearby='true']) {
 		transform: translate(calc(-50% + var(--shift-x, 0px)), calc(-50% + var(--shift-y, 0px)));
 	}
 
-	.map-node-wrap[data-search-match='false'] {
+	:global(.universe-section .map-node-wrap[data-search-match='false']) {
 		opacity: 0.2;
 		filter: saturate(0.5);
 	}
 
-	.map-node-wrap[data-search-match='true'] { z-index: 2; }
+	:global(.universe-section .map-node-wrap[data-search-match='true']) { z-index: 2; }
 
-	.map-node-wrap:hover,
-	.map-node-wrap:focus-within {
+	:global(.universe-section .map-node-wrap:not([data-empty='true']):hover),
+	:global(.universe-section .map-node-wrap:not([data-empty='true']):focus-within) {
 		z-index: 6;
 	}
 
-	.map-node {
+	:global(.universe-section .map-node-wrap[data-empty='true']) {
+		cursor: not-allowed;
+	}
+
+	:global(.universe-section .map-node) {
 		--node-size: clamp(138px, 16vw, 235px);
 		position: relative;
 		display: grid;
@@ -802,7 +831,9 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		width: var(--node-size);
 		aspect-ratio: 1;
 		overflow: hidden;
+		margin: 0;
 		padding: 11%;
+		appearance: none;
 		border: 1px solid rgba(235, 228, 216, 0.31);
 		border-radius: 50%;
 		background: rgba(235, 228, 216, 0.045);
@@ -816,71 +847,81 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		transition: width 380ms cubic-bezier(0.22, 0.7, 0.28, 1), border-color 220ms ease, background-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
 	}
 
-	.zone-node {
+	:global(.universe-section .zone-node) {
 		--node-size: clamp(148px, 14vw, 214px);
 	}
 
-	.size-large .zone-node {
+	:global(.universe-section .size-large .zone-node) {
 		--node-size: clamp(230px, 23vw, 350px);
 	}
 
-	.size-medium .zone-node {
+	:global(.universe-section .size-medium .zone-node) {
 		--node-size: clamp(190px, 18vw, 275px);
 	}
 
-	.zone-wrap:hover .zone-node,
-	.zone-wrap:focus-within .zone-node {
+	:global(.universe-section .zone-wrap:not([data-empty='true']):hover .zone-node:not(:disabled)),
+	:global(.universe-section .zone-wrap:not([data-empty='true']):focus-within .zone-node:not(:disabled)) {
 		--node-size: clamp(245px, 25vw, 390px);
 		border-color: var(--accent-ink);
 		background-color: rgba(14, 11, 9, 0.26);
 		box-shadow: 0 0 44px rgba(207, 116, 64, 0.12);
 	}
 
-	.map-node:hover,
-	.map-node:focus-visible,
-	.map-node-wrap[data-selected='true'] .map-node {
-		border-color: var(--accent-ink);
-		box-shadow: 0 0 32px rgba(207, 116, 64, 0.12);
+	:global(.universe-section .map-node:disabled) {
+		border-color: rgba(235, 228, 216, 0.14);
+		border-style: dashed;
+		background-color: rgba(235, 228, 216, 0.018);
+		color: var(--soft);
+		cursor: not-allowed;
+		opacity: 0.54;
 	}
 
-	.map-node:focus-visible,
-	.node-save:focus-visible,
+	:global(.universe-section .map-node:not(:disabled):hover),
+	:global(.universe-section .map-node:not(:disabled):focus-visible),
+	:global(.universe-section .map-node-wrap[data-selected='true'] .map-node) {
+		border-color: var(--accent-ink);
+		box-shadow: 0 9px 28px rgba(0, 0, 0, 0.25), 0 0 32px rgba(207, 116, 64, 0.17);
+		transform: translateY(-4px) scale(1.025);
+	}
+
+	:global(.universe-section .map-node:focus-visible),
+	:global(.universe-section .node-save:focus-visible),
 	.map-search:focus-within,
-	.breadcrumbs button:focus-visible,
+	:global(.universe-section .breadcrumbs button:focus-visible),
 	.reset:focus-visible {
 		outline: 2px solid var(--accent-ink);
 		outline-offset: 3px;
 	}
 
-	.constellation-node {
+	:global(.universe-section .constellation-node) {
 		--node-size: clamp(168px, 18vw, 250px);
 		background-color: rgba(235, 228, 216, 0.06);
 	}
 
-	.item-node {
+	:global(.universe-section .item-node) {
 		--node-size: clamp(152px, 16vw, 220px);
 	}
 
-	.map-node[data-tier='visited'] {
+	:global(.universe-section .map-node[data-tier='visited']) {
 		border-color: rgba(235, 228, 216, 0.52);
 	}
 
-	.map-node[data-tier='played'] {
+	:global(.universe-section .map-node[data-tier='played']) {
 		border-color: rgba(235, 228, 216, 0.68);
 		background-color: rgba(235, 228, 216, 0.075);
 	}
 
-	.map-node[data-tier='seen'] {
+	:global(.universe-section .map-node[data-tier='seen']) {
 		border-color: rgba(235, 228, 216, 0.85);
 		background-color: rgba(235, 228, 216, 0.11);
 	}
 
-	.seed-node {
+	:global(.universe-section .seed-node) {
 		border-style: dashed;
 		border-color: rgba(235, 228, 216, 0.38);
 	}
 
-	.node-mosaic {
+	:global(.universe-section .node-mosaic) {
 		position: absolute;
 		inset: 0;
 		z-index: 0;
@@ -894,28 +935,28 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		transition: opacity 300ms ease;
 	}
 
-	.node-mosaic::after {
+	:global(.universe-section .node-mosaic::after) {
 		content: '';
 		position: absolute;
 		inset: 0;
 		background: linear-gradient(135deg, rgba(10, 8, 7, 0.32), rgba(10, 8, 7, 0.76));
 	}
 
-	.node-mosaic > span {
+	:global(.universe-section .node-mosaic > span) {
 		min-width: 0;
 		min-height: 0;
 		background: var(--texture) center / cover no-repeat;
 		filter: saturate(0.66);
 	}
 
-	.map-node-wrap:hover .node-mosaic,
-	.map-node-wrap:focus-within .node-mosaic,
-	.map-node:hover .node-mosaic,
-	.map-node:focus-visible .node-mosaic {
+	:global(.universe-section .map-node-wrap:not([data-empty='true']):hover .node-mosaic),
+	:global(.universe-section .map-node-wrap:focus-within .node-mosaic),
+	:global(.universe-section .map-node:not(:disabled):hover .node-mosaic),
+	:global(.universe-section .map-node:not(:disabled):focus-visible .node-mosaic) {
 		opacity: 0.55;
 	}
 
-	.node-copy {
+	:global(.universe-section .node-copy) {
 		position: relative;
 		z-index: 1;
 		display: grid;
@@ -926,7 +967,7 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		pointer-events: none;
 	}
 
-	.node-title {
+	:global(.universe-section .node-title) {
 		font-size: clamp(1.05rem, 4.6cqi, 1.65rem);
 		font-weight: 400;
 		line-height: 1.05;
@@ -934,25 +975,25 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		text-wrap: balance;
 	}
 
-	.zone-node .node-title {
+	:global(.universe-section .zone-node .node-title) {
 		font-size: clamp(1rem, 6.2cqi, 2.2rem);
 	}
 
-	.node-count,
-	.seed-mark {
+	:global(.universe-section .node-count),
+	:global(.universe-section .seed-mark) {
 		font-size: clamp(0.48rem, 2.6cqi, 0.65rem);
 		letter-spacing: 0.1em;
 		color: rgba(235, 228, 216, 0.72);
 		white-space: nowrap;
 	}
 
-	.seed-mark {
+	:global(.universe-section .seed-mark) {
 		font-style: italic;
 		letter-spacing: 0.03em;
 		text-transform: none;
 	}
 
-	.node-save {
+	:global(.universe-section .node-save) {
 		position: absolute;
 		right: -0.1rem;
 		top: -0.1rem;
@@ -961,6 +1002,9 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		place-items: center;
 		width: 2.35rem;
 		aspect-ratio: 1;
+		margin: 0;
+		padding: 0;
+		appearance: none;
 		border: 1px solid var(--hairline-strong);
 		border-radius: 50%;
 		background: rgba(14, 11, 9, 0.92);
@@ -971,18 +1015,18 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		transition: opacity 180ms ease, transform 180ms ease, background-color 180ms ease;
 	}
 
-	.map-node-wrap:hover .node-save,
-	.map-node-wrap:focus-within .node-save,
-	.node-save[aria-pressed='true'] {
+	:global(.universe-section .map-node-wrap:hover .node-save),
+	:global(.universe-section .map-node-wrap:focus-within .node-save),
+	:global(.universe-section .node-save[aria-pressed='true']) {
 		opacity: 1;
 		transform: none;
 	}
 
-	.node-save[aria-pressed='true'] {
+	:global(.universe-section .node-save[aria-pressed='true']) {
 		background: rgba(235, 228, 216, 0.12);
 	}
 
-	.node-save svg {
+	:global(.universe-section .node-save svg) {
 		width: 15px;
 		height: 17px;
 		fill: none;
@@ -1012,7 +1056,7 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		color: var(--muted);
 	}
 
-	.seed-detail {
+	:global(.universe-section .seed-detail) {
 		position: absolute;
 		right: clamp(12px, 2vw, 28px);
 		bottom: clamp(12px, 2vw, 28px);
@@ -1025,36 +1069,36 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 		backdrop-filter: blur(14px);
 	}
 
-	.seed-detail[hidden] {
+	:global(.universe-section .seed-detail[hidden]) {
 		display: none;
 	}
 
-	.seed-detail-top {
+	:global(.universe-section .seed-detail-top) {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
 	}
 
-	.seed-detail-top p,
-	.seed-detail .mono {
+	:global(.universe-section .seed-detail-top p),
+	:global(.universe-section .seed-detail .mono) {
 		margin: 0;
 		color: var(--soft);
 	}
 
-	.seed-detail h3 {
+	:global(.universe-section .seed-detail h3) {
 		margin: 0.7rem 0 0.4rem;
 		font-size: 1.4rem;
 		font-weight: 400;
 		line-height: 1.08;
 	}
 
-	.seed-detail > p:not(.mono) {
+	:global(.universe-section .seed-detail > p:not(.mono)) {
 		margin: 0 0 0.9rem;
 		color: var(--muted);
 	}
 
-	.seed-detail-close {
+	:global(.universe-section .seed-detail-close) {
 		border: 0;
 		padding: 0;
 		background: none;
@@ -1125,24 +1169,24 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 			padding-bottom: 0.35rem;
 		}
 
-		.zone-node,
-		.size-large .zone-node,
-		.size-medium .zone-node,
-		.zone-wrap:hover .zone-node,
-		.zone-wrap:focus-within .zone-node {
+		:global(.universe-section .zone-node),
+		:global(.universe-section .size-large .zone-node),
+		:global(.universe-section .size-medium .zone-node),
+		:global(.universe-section .zone-wrap:not([data-empty='true']):hover .zone-node:not(:disabled)),
+		:global(.universe-section .zone-wrap:not([data-empty='true']):focus-within .zone-node:not(:disabled)) {
 			--node-size: clamp(108px, 29vw, 148px);
 		}
 
-		.size-large .zone-node {
+		:global(.universe-section .size-large .zone-node) {
 			--node-size: clamp(132px, 38vw, 178px);
 		}
 
-		.constellation-node,
-		.item-node {
+		:global(.universe-section .constellation-node),
+		:global(.universe-section .item-node) {
 			--node-size: clamp(106px, 29vw, 146px);
 		}
 
-		.node-save {
+		:global(.universe-section .node-save) {
 			opacity: 1;
 			transform: none;
 		}
@@ -1162,10 +1206,10 @@ const initialItemCount = initialZones.find((zone) => zone.id === 'culture')?.ite
 
 	@media (prefers-reduced-motion: reduce) {
 		.map-scene,
-		.map-node-wrap,
-		.map-node,
-		.node-mosaic,
-		.node-save {
+		:global(.universe-section .map-node-wrap),
+		:global(.universe-section .map-node),
+		:global(.universe-section .node-mosaic),
+		:global(.universe-section .node-save) {
 			transition-duration: 0.01ms !important;
 		}
 	}

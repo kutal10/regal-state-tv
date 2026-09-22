@@ -13,6 +13,10 @@ export type UniverseItem = {
 	searchText: string;
 };
 
+export function isPlayableVideo(item: UniverseItem): item is UniverseItem & { href: string } {
+	return !item.seed && typeof item.href === 'string' && item.href.length > 0;
+}
+
 export type UniverseConstellation = {
 	id: string;
 	title: string;
