@@ -1,0 +1,152 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Gate from '../components/Gate.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { site, inquiries, getArtifactBySlug } from '../data/site';
+
+const panelTexture: Record<string, number> = {
+	repetition: 4,
+	'visible-technique': 21,
+	ugliness: 29,
+};
+
+const board = inquiries.map((inquiry) => ({
+	...inquiry,
+	texture: panelTexture[inquiry.slug] ?? 1,
+	artifacts: inquiry.artifactSlugs
+		.map(getArtifactBySlug)
+		.filter((a): a is NonNullable<typeof a> => Boolean(a)),
+}));
+---
+
+<Layout title={`${site.name} — ${site.tagline}`}>
+	<Gate email={site.email} />
+
+	<div class="page">
+		<SiteHeader current="questions" />
+
+		<main class="board" aria-label="Open questions">
+			{
+				board.map((inquiry) => (
+					<section
+						class="panel"
+						id={`q-${inquiry.slug}`}
+						aria-label={inquiry.question}
+						style={`--texture: url('/textures-lowres/${inquiry.texture}.webp')`}
+					>
+						<div class="panel-caption">
+							<h2 class="panel-question">{inquiry.question}</h2>
+							<ul class="panel-artifacts">
+								{inquiry.artifacts.map((artifact) => (
+									<li>
+										<a href={`/watch/${artifact.slug}`}>{artifact.title}</a>
+									</li>
+								))}
+							</ul>
+						</div>
+					</section>
+				))
+			}
+		</main>
+
+		<SiteFooter email={site.email} instagram={site.instagram} youtube={site.youtube} />
+	</div>
+</Layout>
+
+<style>
+	.board {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		min-height: 0;
+	}
+
+	.panel {
+		position: relative;
+		display: flex;
+		align-items: flex-end;
+		min-width: 0;
+		overflow: hidden;
+		background: var(--texture, #1a1512) center / cover no-repeat;
+	}
+
+	.panel + .panel {
+		border-left: 1px solid var(--hairline);
+	}
+
+	.panel::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(180deg, rgba(10, 8, 7, 0.16), rgba(10, 8, 7, 0.5));
+		pointer-events: none;
+		transition: opacity 240ms ease;
+	}
+
+	.panel:hover::after {
+		opacity: 0.72;
+	}
+
+	.panel-caption {
+		position: relative;
+		z-index: 1;
+		width: 100%;
+		padding: clamp(1.2rem, 2.4vw, 2.4rem);
+		background: rgba(14, 11, 9, 0.88);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		border-top: 1px solid var(--hairline);
+	}
+
+	.panel-question {
+		margin: 0;
+		max-width: 18ch;
+		font-size: clamp(1.5rem, 2.5vw, 2.6rem);
+		font-weight: 300;
+		line-height: 1.04;
+		letter-spacing: -0.025em;
+		text-wrap: balance;
+	}
+
+	.panel-artifacts {
+		margin: clamp(0.9rem, 1.6vw, 1.4rem) 0 0;
+		padding: 0;
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem 1.4rem;
+	}
+
+	.panel-artifacts a {
+		font-size: 0.98rem;
+		color: var(--muted);
+		border-bottom: 1px solid transparent;
+		transition:
+			color 160ms ease,
+			border-color 160ms ease;
+	}
+
+	.panel-artifacts a:hover {
+		color: var(--accent);
+		border-bottom-color: var(--accent);
+	}
+
+	@media (max-width: 900px) {
+		.board {
+			display: flex;
+			flex-direction: column;
+			overflow-y: auto;
+			scroll-snap-type: y mandatory;
+			overscroll-behavior: contain;
+		}
+
+		.panel {
+			flex: 0 0 100%;
+			scroll-snap-align: start;
+		}
+
+		.panel + .panel {
+			border-left: 0;
+		}
+	}
+</style>

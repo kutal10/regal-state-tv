@@ -9,11 +9,8 @@ const { email } = Astro.props;
 <div class="gate" id="gate" hidden>
 	<div class="gate-overlay"></div>
 	<div class="gate-panel" role="dialog" aria-modal="true" aria-labelledby="gate-title">
-		<p class="kicker">Regal State</p>
-		<h1 id="gate-title">Locked</h1>
-		<p class="gate-copy">
-			This is a working preview of the site. Enter the password to look around.
-		</p>
+		<img class="gate-brand" src="/LOGO_1.svg" alt="Regal State" />
+		<h1 id="gate-title" class="mono">Locked</h1>
 		<form id="gate-form">
 			<input
 				type="password"
@@ -23,7 +20,7 @@ const { email } = Astro.props;
 				aria-label="Password"
 			/>
 			<p class="gate-error" id="gate-error" role="alert"></p>
-			<button type="submit" class="gate-submit">Enter</button>
+			<button type="submit" class="gate-submit mono">Enter</button>
 		</form>
 		<p class="gate-contact">
 			No password? <a href={`mailto:${email}`}>Write to us</a>.
@@ -99,38 +96,42 @@ const { email } = Astro.props;
 	.gate-overlay {
 		position: absolute;
 		inset: 0;
-		background: rgba(12, 12, 12, 0.92);
-		backdrop-filter: blur(6px);
-		-webkit-backdrop-filter: blur(6px);
+		background:
+			linear-gradient(rgba(10, 8, 7, 0.86), rgba(10, 8, 7, 0.86)),
+			url('/bg3.webp') center center / cover no-repeat;
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
 	}
 
 	.gate-panel {
 		position: relative;
-		width: min(400px, calc(100% - 40px));
-		margin: 18svh auto 0;
-		padding: 2.4rem 2.2rem 2rem;
-		border: 1px solid var(--hairline);
-		background: var(--bg);
+		width: min(340px, calc(100% - 40px));
+		margin: 24svh auto 0;
+		display: grid;
+		justify-items: center;
+		text-align: center;
+	}
+
+	.gate-brand {
+		width: auto;
+		height: 34px;
+		filter: invert(1) brightness(0.94);
 	}
 
 	.gate-panel h1 {
-		margin: 1.1rem 0 0.6rem;
-		font-size: clamp(2rem, 5vw, 2.6rem);
-		font-weight: 300;
-		letter-spacing: -0.03em;
-		line-height: 1;
+		margin: 1.1rem 0 1.4rem;
+		color: var(--soft);
 	}
 
-	.gate-copy {
-		margin: 0 0 1.6rem;
-		color: var(--muted);
-		font-size: 0.95rem;
+	#gate-form {
+		width: 100%;
 	}
 
 	#gate-input {
 		width: 100%;
 		padding: 0.8rem 0.9rem;
-		border: 1px solid var(--hairline-strong);
+		border: 0;
+		border-bottom: 1px solid var(--hairline-strong);
 		background: transparent;
 		color: var(--ink);
 		font-family: var(--mono);
@@ -139,46 +140,49 @@ const { email } = Astro.props;
 		text-align: center;
 	}
 
+	#gate-input::placeholder {
+		color: var(--soft);
+	}
+
 	#gate-input:focus {
 		outline: none;
-		border-color: var(--accent);
+		border-bottom-color: var(--accent);
 	}
 
 	.gate-error {
 		min-height: 1.3em;
-		margin: 0.5rem 0 0.3rem;
-		color: #c96f5e;
+		margin: 0.5rem 0 0.2rem;
+		color: var(--accent-ink);
 		font-family: var(--mono);
-		font-size: 0.74rem;
-		letter-spacing: 0.08em;
+		font-size: 0.68rem;
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
 	}
 
 	.gate-submit {
 		width: 100%;
+		margin-top: 0.6rem;
 		padding: 0.85rem;
 		border: 1px solid var(--hairline-strong);
 		background: transparent;
 		color: var(--ink);
-		font-family: var(--mono);
-		font-size: 0.78rem;
-		letter-spacing: 0.2em;
-		text-transform: uppercase;
 		cursor: pointer;
 		transition:
 			background-color 160ms ease,
+			border-color 160ms ease,
 			color 160ms ease;
 	}
 
 	.gate-submit:hover {
 		background: var(--ink);
+		border-color: var(--ink);
 		color: var(--bg);
 	}
 
 	.gate-contact {
 		margin: 1.6rem 0 0;
 		color: var(--soft);
-		font-size: 0.85rem;
+		font-size: 0.9rem;
 	}
 
 	.gate-contact a {

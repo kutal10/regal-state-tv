@@ -1,0 +1,108 @@
+---
+interface Props {
+	current?: 'everything' | 'questions' | 'archive' | 'watch';
+}
+
+const { current } = Astro.props;
+
+const links = [
+	{ id: 'everything', href: '/', label: 'Everything' },
+	{ id: 'questions', href: '/questions', label: 'Questions' },
+	{ id: 'archive', href: '/archive', label: 'Archive' },
+] as const;
+---
+
+<header class="site-header">
+	<a class="brand" href="/" aria-label="Regal State home">
+		<img src="/LOGO_1.svg" alt="Regal State" />
+	</a>
+
+	<nav class="site-nav" aria-label="Primary">
+		{
+			links.map((link) => (
+				<a href={link.href} aria-current={current === link.id ? 'page' : undefined}>
+					{link.label}
+				</a>
+			))
+		}
+		<button type="button" id="lock-button">Lock</button>
+	</nav>
+</header>
+
+<script>
+	document.getElementById('lock-button')?.addEventListener('click', () => {
+		window.dispatchEvent(new CustomEvent('gate:request'));
+	});
+</script>
+
+<style>
+	.site-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: clamp(14px, 2vw, 22px) clamp(16px, 3vw, 40px);
+	}
+
+	.brand {
+		display: block;
+		line-height: 0;
+	}
+
+	.brand img {
+		width: auto;
+		height: clamp(18px, 2vw, 26px);
+		opacity: 0.9;
+		filter: invert(1) brightness(0.94);
+		transition: opacity 160ms ease;
+	}
+
+	.brand:hover img {
+		opacity: 1;
+	}
+
+	.site-nav {
+		display: flex;
+		align-items: center;
+		gap: clamp(1rem, 2.2vw, 2rem);
+		font-family: var(--mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.13em;
+		text-transform: uppercase;
+		color: var(--soft);
+	}
+
+	.site-nav a,
+	#lock-button {
+		transition: color 160ms ease;
+	}
+
+	.site-nav a:hover,
+	.site-nav a[aria-current='page'],
+	#lock-button:hover {
+		color: var(--ink);
+	}
+
+	#lock-button {
+		background: none;
+		border: 0;
+		padding: 0;
+		font: inherit;
+		color: inherit;
+		letter-spacing: inherit;
+		text-transform: inherit;
+		cursor: pointer;
+	}
+
+	@media (max-width: 420px) {
+		.site-header {
+			gap: 0.7rem;
+		}
+
+		.site-nav {
+			gap: 0.6rem;
+			font-size: 0.58rem;
+			letter-spacing: 0.06em;
+		}
+	}
+</style>

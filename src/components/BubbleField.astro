@@ -1,0 +1,424 @@
+---
+import { bubbles, restingLayout, totals } from '../lib/bubbles';
+
+const packed = restingLayout();
+const positioned = bubbles.map((bubble) => ({
+	bubble,
+	circle: packed.get(bubble.slug) ?? { id: bubble.slug, x: 0.5, y: 0.5, radius: 0.1 },
+}));
+---
+
+<script is:inline>
+	(() => {
+		try {
+			const raw = localStorage.getItem('rs_progress');
+			const progress = raw ? JSON.parse(raw) : null;
+			const marked =
+				progress &&
+				['seen', 'played', 'visited'].some(
+					(key) => Array.isArray(progress[key]) && progress[key].length > 0,
+				);
+			if (!marked) return;
+			document.documentElement.setAttribute('data-bubbles-pending', '');
+			window.setTimeout(() => {
+				document.documentElement.removeAttribute('data-bubbles-pending');
+			}, 1200);
+		} catch {
+			/* storage unavailable */
+		}
+	})();
+</script>
+
+<section class="field-section" aria-labelledby="field-heading">
+	<h2 id="field-heading" class="visually-hidden">Everything in the archive</h2>
+
+	<div class="field-wrap">
+		<div class="field" data-field>
+			{
+				positioned.map(({ bubble, circle }) => {
+					const style = `--x:${circle.x.toFixed(4)};--y:${circle.y.toFixed(4)};--r:${circle.radius.toFixed(4)};--tex:url('/textures-lowres/${bubble.texture}.webp')`;
+					const card = (
+						<>
+							<span class="bubble-face" aria-hidden="true" />
+							<span class="bubble-card">
+								<span class="bubble-title">{bubble.title}</span>
+								<span class="bubble-chip mono">
+									{bubble.seed ? 'seed' : bubble.duration}
+								</span>
+								{bubble.question && <span class="bubble-question">{bubble.question}</span>}
+							</span>
+						</>
+					);
+
+					return bubble.seed ? (
+						<button
+							class="bubble"
+							type="button"
+							data-slug={bubble.slug}
+							data-tier="none"
+							data-seed
+							style={style}
+							aria-label={`${bubble.title} — seed, not made yet`}
+						>
+							{card}
+						</button>
+					) : (
+						<a
+							class="bubble"
+							href={bubble.href}
+							data-slug={bubble.slug}
+							data-tier="none"
+							style={style}
+							aria-label={`${bubble.title} — ${bubble.duration}`}
+						>
+							{card}
+						</a>
+					);
+				})
+			}
+		</div>
+	</div>
+
+	<div class="readout">
+		<p class="readout-line mono" aria-live="polite">
+			<span data-readout-items>Seen 0 of {totals.items}</span>
+			<span class="readout-sep">·</span>
+			<span data-readout-minutes>0 of {totals.minutes} min of video</span>
+			<span class="readout-sep">·</span>
+			<span>{totals.seeds} seeds not yet made</span>
+		</p>
+		<button class="reset mono" type="button" id="field-reset">reset</button>
+	</div>
+</section>
+
+<script>
+	import { loadProgress, clearProgress, snapshot, PROGRESS_EVENT } from '../lib/progress';
+	import { bubbles, layout, tierFor, totals } from '../lib/bubbles';
+
+	const field = document.querySelector<HTMLElement>('[data-field]');
+
+	if (field) {
+		const elements = new Map<string, HTMLElement>();
+		field.querySelectorAll<HTMLElement>('[data-slug]').forEach((element) => {
+			elements.set(element.dataset.slug ?? '', element);
+		});
+
+		const itemsOut = document.querySelector<HTMLElement>('[data-readout-items]');
+		const minutesOut = document.querySelector<HTMLElement>('[data-readout-minutes]');
+		const watchable = bubbles.filter((bubble) => !bubble.seed);
+		const hasHover = window.matchMedia('(hover: hover)').matches;
+
+		let selected: string | null = null;
+
+		function select(slug: string) {
+			if (selected) elements.get(selected)?.removeAttribute('data-selected');
+			selected = slug;
+			elements.get(slug)?.setAttribute('data-selected', '');
+		}
+
+		function deselect() {
+			if (selected) elements.get(selected)?.removeAttribute('data-selected');
+			selected = null;
+		}
+
+		function apply() {
+			const progress = loadProgress();
+			const current = snapshot(progress);
+			const packed = layout(progress);
+
+			for (const bubble of bubbles) {
+				const element = elements.get(bubble.slug);
+				const circle = packed.get(bubble.slug);
+				if (!element || !circle) continue;
+				element.style.setProperty('--x', circle.x.toFixed(4));
+				element.style.setProperty('--y', circle.y.toFixed(4));
+				element.style.setProperty('--r', circle.radius.toFixed(4));
+				element.dataset.tier = tierFor(current, bubble.slug);
+			}
+
+			const seen = watchable.filter((bubble) => current.seen.includes(bubble.slug));
+			const minutes = seen.reduce((sum, bubble) => sum + (bubble.minutes ?? 0), 0);
+			if (itemsOut) itemsOut.textContent = `Seen ${seen.length} of ${totals.items}`;
+			if (minutesOut) {
+				minutesOut.textContent = `${minutes} of ${totals.minutes} min of video`;
+			}
+
+			document.documentElement.removeAttribute('data-bubbles-pending');
+		}
+
+		elements.forEach((element, slug) => {
+			element.addEventListener('click', (event) => {
+				const isLink = element instanceof HTMLAnchorElement;
+				if (isLink && hasHover) return;
+
+				event.preventDefault();
+
+				if (selected === slug) {
+					if (isLink) {
+						window.location.href = element.href;
+						return;
+					}
+					deselect();
+					return;
+				}
+
+				select(slug);
+			});
+		});
+
+		field.addEventListener('click', (event) => {
+			if (event.target === field) deselect();
+		});
+
+		document.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape' && selected) deselect();
+		});
+
+		document.getElementById('field-reset')?.addEventListener('click', () => {
+			clearProgress();
+			deselect();
+		});
+
+		document.addEventListener(PROGRESS_EVENT, apply);
+		apply();
+	}
+</script>
+
+<style>
+	.field-section {
+		position: relative;
+		display: grid;
+		grid-template-rows: minmax(0, 1fr) auto;
+		min-height: 0;
+	}
+
+	.field-wrap {
+		display: grid;
+		place-items: center;
+		min-height: 0;
+		container-type: size;
+	}
+
+	.field {
+		position: relative;
+		width: min(100%, 100cqh);
+		aspect-ratio: 1;
+	}
+
+	@supports not (container-type: size) {
+		.field {
+			width: min(100%, 46vh);
+		}
+	}
+
+	.field::after {
+		content: '';
+		position: absolute;
+		inset: 2%;
+		border-radius: 50%;
+		border: 1px solid rgba(235, 228, 216, 0.07);
+		pointer-events: none;
+	}
+
+	.bubble {
+		--card-min: min(210px, 56vmin);
+		position: absolute;
+		left: calc(var(--x) * 100%);
+		top: calc(var(--y) * 100%);
+		width: calc(var(--r) * 200%);
+		aspect-ratio: 1;
+		transform: translate(-50%, -50%);
+		padding: 0;
+		border: 1px solid rgba(235, 228, 216, 0.3);
+		border-radius: 50%;
+		background: rgba(235, 228, 216, 0.05);
+		color: var(--ink);
+		font: inherit;
+		text-align: center;
+		cursor: pointer;
+		overflow: hidden;
+		container-type: size;
+		container-name: bubble;
+		-webkit-tap-highlight-color: transparent;
+		transition:
+			width 420ms cubic-bezier(0.22, 0.7, 0.28, 1),
+			left 420ms cubic-bezier(0.22, 0.7, 0.28, 1),
+			top 420ms cubic-bezier(0.22, 0.7, 0.28, 1),
+			border-color 240ms ease,
+			background-color 240ms ease,
+			opacity 320ms ease;
+	}
+
+	html[data-bubbles-pending] .bubble,
+	html[data-bubbles-pending] .readout {
+		opacity: 0;
+	}
+
+	.bubble[data-tier='visited'] {
+		border-color: rgba(235, 228, 216, 0.62);
+		background: rgba(235, 228, 216, 0.1);
+	}
+
+	.bubble[data-tier='played'] {
+		border-color: rgba(224, 142, 92, 0.8);
+		background: rgba(207, 116, 64, 0.3);
+	}
+
+	.bubble[data-tier='seen'] {
+		border-color: rgba(207, 116, 64, 0.9);
+		background: var(--accent);
+	}
+
+	.bubble[data-seed] {
+		border-style: dashed;
+		border-color: rgba(235, 228, 216, 0.34);
+		background: transparent;
+	}
+
+	.bubble:hover,
+	.bubble:focus-visible,
+	.bubble[data-selected] {
+		width: max(calc(var(--r) * 200%), var(--card-min));
+		left: clamp(
+			calc(var(--card-min) / 2 + 10px),
+			calc(var(--x) * 100%),
+			calc(100% - var(--card-min) / 2 - 10px)
+		);
+		top: clamp(
+			calc(var(--card-min) / 2 + 10px),
+			calc(var(--y) * 100%),
+			calc(100% - var(--card-min) / 2 - 10px)
+		);
+		z-index: 4;
+		color: var(--ink);
+	}
+
+	.bubble:focus-visible {
+		outline: 2px solid var(--accent-ink);
+		outline-offset: 3px;
+	}
+
+	.bubble-face {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		border-radius: 50%;
+		background-image: var(--tex);
+		background-position: center;
+		background-size: cover;
+		filter: saturate(0.72);
+		opacity: 0;
+		transition: opacity 260ms ease;
+	}
+
+	.bubble-face::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		background: rgba(10, 8, 7, 0.66);
+	}
+
+	.bubble:hover .bubble-face,
+	.bubble:focus-visible .bubble-face,
+	.bubble[data-selected] .bubble-face {
+		opacity: 1;
+	}
+
+	.bubble-card {
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+		display: grid;
+		align-content: center;
+		justify-items: center;
+		gap: 0.3rem;
+		padding: 14%;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 260ms ease 60ms;
+	}
+
+	.bubble:hover .bubble-card,
+	.bubble:focus-visible .bubble-card,
+	.bubble[data-selected] .bubble-card {
+		opacity: 1;
+	}
+
+	.bubble-title {
+		font-size: clamp(0.72rem, 11cqmin, 1.6rem);
+		font-weight: 400;
+		line-height: 1.05;
+		letter-spacing: -0.012em;
+		text-wrap: balance;
+	}
+
+	.bubble-chip {
+		padding: 0.18rem 0.5rem;
+		border: 1px solid currentColor;
+		border-radius: 999px;
+		font-size: clamp(0.5rem, 5cqmin, 0.68rem);
+		letter-spacing: 0.1em;
+		opacity: 0.8;
+		white-space: nowrap;
+	}
+
+	.bubble-question {
+		max-width: 22ch;
+		font-size: clamp(0.56rem, 6.4cqmin, 0.95rem);
+		font-style: italic;
+		line-height: 1.25;
+		opacity: 0.76;
+	}
+
+	.readout {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: clamp(10px, 1.6vw, 15px) clamp(16px, 3vw, 40px) 0;
+		transition: opacity 320ms ease;
+	}
+
+	.readout-line {
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+		color: var(--muted);
+	}
+
+	.readout-sep {
+		color: var(--soft);
+	}
+
+	.reset {
+		border: 0;
+		border-bottom: 1px solid transparent;
+		padding: 0 0 0.15rem;
+		background: none;
+		font: inherit;
+		color: var(--soft);
+		opacity: 0.55;
+		cursor: pointer;
+		transition:
+			opacity 160ms ease,
+			color 160ms ease;
+	}
+
+	.reset:hover {
+		opacity: 1;
+		color: var(--ink);
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+</style>

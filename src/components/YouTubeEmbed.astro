@@ -27,6 +27,7 @@ const embed = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&mod
 		cover.addEventListener('click', () => {
 			const src = cover.parentElement?.dataset.embedSrc;
 			if (!src) return;
+			cover.dispatchEvent(new CustomEvent('video:play', { bubbles: true }));
 			const frame = document.createElement('iframe');
 			frame.src = src;
 			frame.title = cover.getAttribute('aria-label') ?? 'Video player';
@@ -48,7 +49,6 @@ const embed = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&mod
 		width: 100%;
 		aspect-ratio: 16 / 9;
 		background: #000;
-		border: 1px solid var(--hairline);
 		overflow: hidden;
 	}
 
@@ -61,7 +61,7 @@ const embed = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&mod
 		border: 0;
 		cursor: pointer;
 		background:
-			linear-gradient(180deg, rgba(12, 12, 12, 0.08), rgba(12, 12, 12, 0.34)),
+			linear-gradient(180deg, rgba(10, 8, 7, 0.04), rgba(10, 8, 7, 0.26)),
 			var(--thumb, #111) center / cover no-repeat;
 	}
 
@@ -79,11 +79,11 @@ const embed = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&mod
 
 	.embed-play::after {
 		content: '';
-		width: clamp(64px, 9vw, 88px);
+		width: clamp(58px, 8vw, 78px);
 		aspect-ratio: 1;
 		border-radius: 50%;
-		border: 1px solid rgba(232, 228, 220, 0.85);
-		background: rgba(12, 12, 12, 0.45);
+		border: 1px solid rgba(251, 248, 243, 0.9);
+		background: rgba(25, 21, 16, 0.42);
 		transition:
 			background-color 180ms ease,
 			transform 180ms ease;
@@ -96,13 +96,13 @@ const embed = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&mod
 		left: 50%;
 		transform: translate(-38%, -50%);
 		border-style: solid;
-		border-width: 11px 0 11px 18px;
-		border-color: transparent transparent transparent rgba(232, 228, 220, 0.9);
+		border-width: 10px 0 10px 16px;
+		border-color: transparent transparent transparent rgba(251, 248, 243, 0.92);
 		z-index: 1;
 	}
 
 	.embed-cover:hover .embed-play::after {
-		background: rgba(198, 181, 152, 0.32);
+		background: rgba(207, 116, 64, 0.55);
 		transform: scale(1.05);
 	}
 

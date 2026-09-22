@@ -67,7 +67,7 @@ export const inquiries: Inquiry[] = [
 		slug: 'repetition',
 		question: 'Why do artists repeat themselves?',
 		line: 'Essays on motifs, obsession, seriality, and sampling — repetition as a form of thinking, not a failure of imagination.',
-		artifactSlugs: ['the-serial-impulse', 'notes-on-motifs'],
+		artifactSlugs: ['the-serial-impulse', 'notes-on-motifs', 'on-standing-still'],
 		openThreads: [
 			'Is a motif discovered or installed?',
 			'Where seriality becomes mannerism',
@@ -77,7 +77,7 @@ export const inquiries: Inquiry[] = [
 		slug: 'visible-technique',
 		question: 'What happens when technique becomes visible?',
 		line: 'Essays on editing, brushwork, virtuosity, and production — the moment the hand stops hiding.',
-		artifactSlugs: ['the-serial-impulse', 'grain-and-control'],
+		artifactSlugs: ['the-serial-impulse', 'grain-and-control', 'on-standing-still'],
 		openThreads: [
 			'Can a cut be honest?',
 			'Virtuosity as a mask for doubt',

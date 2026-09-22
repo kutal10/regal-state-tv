@@ -1,363 +1,229 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Gate from '../components/Gate.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 import {
 	site,
-	archiveTiers,
-	getArtifactsForTier,
-	getIdeasForTier,
+	artifacts,
+	ideas,
 	getChronologicalArtifacts,
+	type ArtifactState,
 } from '../data/site';
 
-const tierData = archiveTiers.map((tier) => {
-	const tierArtifacts = getArtifactsForTier(tier.id);
-	const tierIdeas = getIdeasForTier(tier.id);
-	return {
-		...tier,
-		count: tierArtifacts.length + tierIdeas.length,
-		artifacts: tierArtifacts,
-		ideas: tierIdeas,
-	};
-});
+type FilterId = 'all' | ArtifactState;
 
-const totalPieces = getChronologicalArtifacts().length;
+const chronological = getChronologicalArtifacts();
 
-function formatDate(date: string) {
-	return new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric',
-	});
-}
+const tiles = [
+	...chronological.map((artifact) => ({
+		id: artifact.slug,
+		title: artifact.title,
+		texture: artifact.texture,
+		state: artifact.state,
+		href: `/watch/${artifact.slug}`,
+		seed: false,
+	})),
+	...ideas.map((idea) => ({
+		id: idea.slug,
+		title: idea.title,
+		texture: idea.texture,
+		state: 'idea' as ArtifactState,
+		href: undefined,
+		seed: true,
+	})),
+];
+
+const filters: { id: FilterId; label: string; count: number }[] = [
+	{ id: 'all', label: 'All', count: tiles.length },
+	{ id: 'released', label: 'Released', count: artifacts.filter((a) => a.state === 'released').length },
+	{ id: 'rough', label: 'Rough', count: artifacts.filter((a) => a.state === 'rough').length },
+	{ id: 'idea', label: 'Ideas', count: ideas.length },
+];
 ---
 
 <Layout title={`Archive — ${site.name}`}>
 	<Gate email={site.email} />
 
-	<header class="site-header shell">
-		<a href="/" class="wordmark">Regal State <em>/ TV</em></a>
-		<nav class="site-nav" aria-label="Primary">
-			<a href="/">Questions</a>
-			<a href="/archive" aria-current="page">Archive</a>
-		</nav>
-	</header>
+	<div class="page">
+		<SiteHeader current="archive" />
 
-	<main class="shell">
-		<section class="archive-head">
-			<p class="kicker">The full record</p>
-			<h1>Archive</h1>
-			<p class="archive-line">
-				{totalPieces} pieces, held in three states. Choose a tier.
-			</p>
-		</section>
+		<main class="sheet">
+			<nav class="filters" aria-label="Filter the archive">
+				{
+					filters.map((filter) => (
+						<button
+							type="button"
+							class="filter"
+							data-filter={filter.id}
+							aria-pressed={filter.id === 'all' ? 'true' : 'false'}
+						>
+							{filter.label}
+							<span class="filter-count">{filter.count}</span>
+						</button>
+					))
+				}
+			</nav>
 
-		<section class="tier-menu" aria-label="Archive tiers">
-			{
-				tierData.map((tier, index) => (
-					<button
-						class={`tier ${index > 0 ? 'tier-bordered' : ''}`}
-						type="button"
-						data-tier={tier.id}
-						aria-expanded="false"
-						aria-controls={`tier-grid-${tier.id}`}
-					>
-						<span class="tier-copy">
-							<span class="tier-label">{tier.label}</span>
-							<span class="tier-line">{tier.line}</span>
-						</span>
-						<span class="tier-count">
-							<span class="tier-count-value">{tier.count}</span>
-							<span class="tier-count-label">pieces</span>
-						</span>
-					</button>
-				))
-			}
-		</section>
+			<ul class="grid">
+				{
+					tiles.map((tile) => (
+						<li
+							class:list={['tile', tile.seed && 'tile-seed']}
+							data-state={tile.state}
+							style={`--texture: url('/textures-lowres/${tile.texture}.webp')`}
+						>
+							{tile.href ? (
+								<a class="tile-link" href={tile.href}>
+									<span class="tile-plate" aria-hidden="true" />
+									<span class="tile-title">{tile.title}</span>
+								</a>
+							) : (
+								<div class="tile-link">
+									<span class="tile-plate" aria-hidden="true" />
+									<span class="tile-title">{tile.title}</span>
+								</div>
+							)}
+						</li>
+					))
+				}
+			</ul>
+		</main>
 
-		{
-			tierData.map((tier) => (
-				<section
-					class="tier-grid-wrap"
-					id={`tier-grid-${tier.id}`}
-					data-tier-grid={tier.id}
-					hidden
-				>
-					{tier.artifacts.length > 0 && (
-						<ul class="tier-grid">
-							{tier.artifacts.map((artifact) => (
-								<li>
-									<a
-										class="card"
-										href={`/watch/${artifact.slug}`}
-										style={`--texture: url('/textures-lowres/${artifact.texture}.webp')`}
-									>
-										<span class="card-image" aria-hidden="true" />
-										<span class="card-body">
-											<span class="card-title">{artifact.title}</span>
-											<span class="card-summary">{artifact.summary}</span>
-											<span class="card-meta">
-												{formatDate(artifact.date)} · {artifact.kind} · {artifact.duration}
-											</span>
-										</span>
-									</a>
-								</li>
-							))}
-						</ul>
-					)}
-
-					{tier.ideas.length > 0 && (
-						<ul class="tier-grid">
-							{tier.ideas.map((idea) => (
-								<li>
-									<div
-										class="card card-idea"
-										style={`--texture: url('/textures-lowres/${idea.texture}.webp')`}
-									>
-										<span class="card-image" aria-hidden="true" />
-										<span class="card-body">
-											<span class="card-title">{idea.title}</span>
-											<span class="card-summary">{idea.line}</span>
-											<span class="card-meta">seed · not an artifact yet</span>
-										</span>
-									</div>
-								</li>
-							))}
-						</ul>
-					)}
-				</section>
-			))
-		}
-	</main>
-
-	<footer class="site-footer shell">
-		<a href={`mailto:${site.email}`}>{site.email}</a>
-		<span>
-			<a href={site.instagram} target="_blank" rel="noreferrer">Instagram</a>
-			{' / '}
-			<a href={site.youtube} target="_blank" rel="noreferrer">YouTube</a>
-		</span>
-	</footer>
+		<SiteFooter email={site.email} instagram={site.instagram} youtube={site.youtube} />
+	</div>
 </Layout>
 
 <script>
-	document.querySelectorAll<HTMLButtonElement>('[data-tier]').forEach((button) => {
-		const tierId = button.dataset.tier;
-		const grid = document.querySelector<HTMLElement>(`[data-tier-grid="${tierId}"]`);
-		if (!grid) return;
+	const buttons = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
+	const tiles = document.querySelectorAll<HTMLElement>('[data-state]');
 
+	buttons.forEach((button) => {
 		button.addEventListener('click', () => {
-			const isOpen = !grid.hidden;
+			const filter = button.dataset.filter;
 
-			document.querySelectorAll<HTMLElement>('[data-tier-grid]').forEach((other) => {
-				other.hidden = true;
+			buttons.forEach((other) => other.setAttribute('aria-pressed', String(other === button)));
+			tiles.forEach((tile) => {
+				const show = filter === 'all' || tile.dataset.state === filter;
+				tile.hidden = !show;
 			});
-			document.querySelectorAll<HTMLButtonElement>('[data-tier]').forEach((other) => {
-				other.classList.remove('tier-active');
-				other.setAttribute('aria-expanded', 'false');
-			});
-
-			if (isOpen) return;
-
-			grid.hidden = false;
-			button.classList.add('tier-active');
-			button.setAttribute('aria-expanded', 'true');
-			grid.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 		});
 	});
 </script>
 
 <style>
-	.archive-head {
-		padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(1.8rem, 4vw, 3rem);
-	}
-
-	.archive-head h1 {
-		margin: 1.2rem 0 0;
-		font-size: clamp(2.4rem, 6vw, 4.2rem);
-		font-weight: 300;
-		line-height: 1;
-		letter-spacing: -0.04em;
-	}
-
-	.archive-line {
-		margin: 1.2rem 0 0;
-		max-width: 52ch;
-		color: var(--muted);
-	}
-
-	.tier-menu {
+	.sheet {
 		display: grid;
-		border-top: 1px solid var(--hairline);
+		grid-template-rows: auto minmax(0, 1fr);
+		min-height: 0;
 	}
 
-	.tier {
+	.filters {
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 2rem;
-		width: 100%;
-		padding: clamp(1.4rem, 3vw, 2.2rem) 0;
-		border: 0;
+		align-items: baseline;
+		gap: clamp(1rem, 2.4vw, 2.2rem);
+		padding: 0 clamp(16px, 3vw, 40px) clamp(12px, 1.8vw, 18px);
 		border-bottom: 1px solid var(--hairline);
+	}
+
+	.filter {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.45rem;
+		padding: 0 0 0.4rem;
+		border: 0;
+		border-bottom: 1px solid transparent;
 		background: none;
-		color: inherit;
-		font: inherit;
-		text-align: left;
+		font-family: var(--mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.13em;
+		text-transform: uppercase;
+		color: var(--soft);
 		cursor: pointer;
 		transition: color 160ms ease;
 	}
 
-	.tier-bordered {
-		border-left: 0;
+	.filter:hover {
+		color: var(--ink);
 	}
 
-	.tier-copy {
-		display: grid;
-		gap: 0.45rem;
+	.filter[aria-pressed='true'] {
+		color: var(--ink);
+		border-bottom-color: var(--accent);
 	}
 
-	.tier-label {
-		font-size: clamp(1.5rem, 3vw, 2.3rem);
-		font-weight: 300;
-		letter-spacing: -0.03em;
-		line-height: 1;
-	}
-
-	.tier-line {
-		color: var(--soft);
-		font-size: 0.95rem;
-	}
-
-	.tier-count {
-		display: grid;
-		justify-items: end;
-		gap: 0.2rem;
-	}
-
-	.tier-count-value {
-		font-family: var(--mono);
-		font-size: clamp(2.6rem, 6vw, 4.4rem);
-		font-weight: 400;
-		line-height: 0.9;
-		letter-spacing: -0.04em;
-		color: var(--muted);
-		transition: color 160ms ease;
-	}
-
-	.tier-count-label {
-		font-family: var(--mono);
-		font-size: 0.64rem;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
+	.filter-count {
+		font-size: 0.6rem;
 		color: var(--soft);
 	}
 
-	.tier:hover .tier-count-value,
-	.tier:hover .tier-label {
-		color: var(--accent);
-	}
-
-	.tier-active .tier-label {
-		font-style: italic;
-	}
-
-	.tier-active .tier-count-value {
-		color: var(--accent);
-	}
-
-	.tier-grid-wrap {
-		padding: clamp(1.8rem, 4vw, 3rem) 0 clamp(1rem, 2vw, 2rem);
-	}
-
-	.tier-grid {
+	.grid {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: clamp(1rem, 2vw, 1.6rem);
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: clamp(10px, 1.4vw, 18px);
 		margin: 0;
-		padding: 0;
+		padding: clamp(14px, 2vw, 22px) clamp(16px, 3vw, 40px) clamp(14px, 2vw, 22px);
 		list-style: none;
+		min-height: 0;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+		scrollbar-color: var(--hairline) transparent;
 	}
 
-	.card {
-		position: relative;
+	.tile {
+		min-width: 0;
+	}
+
+	.tile-link {
 		display: grid;
-		text-decoration: none;
+		grid-template-rows: minmax(0, 1fr) auto;
 		height: 100%;
-		border: 1px solid var(--hairline);
-		overflow: hidden;
-		transition: border-color 160ms ease;
+		gap: 0.7rem;
 	}
 
-	.card:hover {
-		border-color: var(--hairline-strong);
-	}
-
-	.card-idea {
-		cursor: default;
-	}
-
-	.card-image {
+	.tile-plate {
 		display: block;
-		aspect-ratio: 16 / 10;
-		background:
-			linear-gradient(180deg, rgba(12, 12, 12, 0.1), rgba(12, 12, 12, 0.42)),
-			var(--texture, #161616) center / cover no-repeat;
-		filter: grayscale(0.55) contrast(1.02);
+		min-height: clamp(120px, 22vh, 260px);
+		background: var(--texture, #1a1512) center / cover no-repeat;
+		filter: saturate(0.72);
 		transition: filter 240ms ease;
 	}
 
-	.card:hover .card-image {
-		filter: grayscale(0.15) contrast(1.04);
+	.tile-link:hover .tile-plate {
+		filter: saturate(1);
 	}
 
-	.card-body {
-		display: grid;
-		gap: 0.5rem;
-		padding: 1.1rem 1.2rem 1.3rem;
-	}
-
-	.card-title {
-		font-size: 1.18rem;
-		letter-spacing: -0.015em;
-		line-height: 1.1;
+	.tile-title {
+		font-size: clamp(0.95rem, 1.1vw, 1.1rem);
+		line-height: 1.2;
+		color: var(--muted);
 		transition: color 160ms ease;
 	}
 
-	.card:hover .card-title {
+	a.tile-link:hover .tile-title {
 		color: var(--accent);
 	}
 
-	.card-idea .card-title {
+	.tile-seed .tile-plate {
+		filter: saturate(0.5) contrast(0.92);
+		opacity: 0.72;
+	}
+
+	.tile-seed .tile-title {
 		font-style: italic;
-	}
-
-	.card-summary {
-		color: var(--muted);
-		font-size: 0.92rem;
-		line-height: 1.45;
-	}
-
-	.card-meta {
-		font-family: var(--mono);
-		font-size: 0.66rem;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
 		color: var(--soft);
 	}
 
-	@media (max-width: 880px) {
-		.tier-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
+	@media (max-width: 1100px) {
+		.grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
 		}
 	}
 
-	@media (max-width: 620px) {
-		.tier-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.tier {
-			align-items: baseline;
+	@media (max-width: 760px) {
+		.grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 </style>
