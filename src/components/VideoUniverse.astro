@@ -22,10 +22,6 @@ const initialItemCount = countPlayableVideos(initialZones.find((zone) => zone.id
 
 		<label class="map-search">
 			<span class="visually-hidden">Search the universe</span>
-			<svg viewBox="0 0 20 20" aria-hidden="true">
-				<circle cx="8.5" cy="8.5" r="5.5" />
-				<path d="m12.5 12.5 4 4" />
-			</svg>
 			<input type="search" placeholder="Search the universe" autocomplete="off" data-map-search />
 		</label>
 	</div>
@@ -639,11 +635,11 @@ const initialItemCount = countPlayableVideos(initialZones.find((zone) => zone.id
 	.map-toolbar {
 		position: relative;
 		z-index: 10;
-		display: flex;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 		align-items: center;
-		justify-content: space-between;
 		gap: 1.2rem;
-		min-height: 52px;
+		min-height: 72px;
 		padding: 0 clamp(16px, 3vw, 40px) 8px;
 	}
 
@@ -705,51 +701,42 @@ const initialItemCount = countPlayableVideos(initialZones.find((zone) => zone.id
 	}
 
 	.map-search {
-		position: absolute;
-		left: 50%;
-		top: 0;
-		transform: translateX(-50%);
-		display: flex;
-		align-items: center;
-		gap: 0.7rem;
-		width: min(350px, 36vw);
-		padding: 0.65rem 0.8rem;
-		border: 1px solid var(--hairline);
-		border-radius: 999px;
-		background: rgba(14, 11, 9, 0.76);
+		position: relative;
+		z-index: 1;
+		display: block;
+		width: min(680px, 58vw);
+		padding-bottom: 0.18em;
+		border-bottom: 1px solid var(--hairline-strong);
 		color: var(--soft);
-		backdrop-filter: blur(12px);
-		transition: border-color 180ms ease, background-color 180ms ease;
-	}
-
-	.map-search:focus-within {
-		border-color: var(--hairline-strong);
-		background: rgba(14, 11, 9, 0.92);
-	}
-
-	.map-search svg {
-		flex: 0 0 auto;
-		width: 17px;
-		height: 17px;
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 1.4;
+		cursor: text;
 	}
 
 	.map-search input {
+		-webkit-appearance: none;
+		appearance: none;
+		display: block;
+		height: 1em;
 		width: 100%;
 		min-width: 0;
+		margin: 0;
 		border: 0;
 		outline: 0;
 		padding: 0;
 		background: none;
 		color: var(--ink);
 		font: inherit;
-		font-size: 0.92rem;
+		font-size: clamp(1.7rem, 3.2vw, 2.6rem);
+		line-height: 1;
+	}
+
+	.map-search input::-webkit-search-cancel-button {
+		-webkit-appearance: none;
+		appearance: none;
 	}
 
 	.map-search input::placeholder {
-		color: var(--soft);
+		color: rgba(235, 228, 216, 0.3);
+		opacity: 1;
 	}
 
 	.map-viewport {
@@ -896,7 +883,6 @@ const initialItemCount = countPlayableVideos(initialZones.find((zone) => zone.id
 
 	:global(.universe-section .map-node:focus-visible),
 	:global(.universe-section .node-save:focus-visible),
-	.map-search:focus-within,
 	:global(.universe-section .breadcrumbs button:focus-visible),
 	.reset:focus-visible {
 		outline: 2px solid var(--accent-ink);
@@ -1220,27 +1206,28 @@ const initialItemCount = countPlayableVideos(initialZones.find((zone) => zone.id
 		white-space: nowrap;
 	}
 
-	@media (max-width: 720px) {
+	@media (max-width: 900px) {
 		.map-toolbar {
-			align-items: flex-end;
-			min-height: 98px;
+			grid-template-columns: minmax(0, 1fr);
+			align-items: end;
+			gap: 0.6rem;
+			min-height: 0;
 			padding-bottom: 8px;
 		}
 
 		.map-search {
-			left: 16px;
-			right: 16px;
-			top: 0;
-			width: auto;
-			transform: none;
+			grid-row: 1;
+			width: 100%;
 		}
 
 		.breadcrumbs {
-			align-self: flex-end;
+			grid-row: 2;
 			max-width: 100%;
 			padding-bottom: 0.35rem;
 		}
+	}
 
+	@media (max-width: 720px) {
 		:global(.universe-section .zone-node),
 		:global(.universe-section .size-large .zone-node),
 		:global(.universe-section .size-medium .zone-node),
